@@ -383,3 +383,80 @@ npm run dev
 }
 ```
 
+---
+
+### Step 11: Election Management (Super Admin)
+
+#### 11a. Create an Election
+* **Method**: `POST`
+* **URL**: `http://localhost:5000/api/elections`
+* **Headers**:
+  * `Content-Type: application/json`
+  * `Authorization: Bearer <SUPER_ADMIN_TOKEN>`
+* **Body (raw JSON)**:
+```json
+{
+  "title": "College Student Council Election 2026",
+  "description": "Annual elections for student council representatives",
+  "startDate": "2026-09-01T09:00:00.000Z",
+  "endDate": "2026-09-05T17:00:00.000Z"
+}
+```
+* **Expected Response (`201 Created`)**:
+```json
+{
+  "message": "Election created successfully",
+  "electionId": 1
+}
+```
+
+#### 11b. Get All Elections
+* **Method**: `GET`
+* **URL**: `http://localhost:5000/api/elections`
+* **Headers**:
+  * `Authorization: Bearer <SUPER_ADMIN_TOKEN>`
+* **Expected Response (`200 OK`)**:
+```json
+{
+  "elections": [
+    {
+      "id": 1,
+      "title": "College Student Council Election 2026",
+      "description": "Annual elections for student council representatives",
+      "start_date": "2026-09-01T09:00:00.000Z",
+      "end_date": "2026-09-05T17:00:00.000Z",
+      "status": "DRAFT",
+      "created_by": 1,
+      "created_at": "...",
+      "updated_at": "..."
+    }
+  ]
+}
+```
+
+#### 11c. Get Election by ID
+* **Method**: `GET`
+* **URL**: `http://localhost:5000/api/elections/1`
+* **Headers**:
+  * `Authorization: Bearer <SUPER_ADMIN_TOKEN>`
+
+#### 11d. Update Election Status
+* **Method**: `PATCH`
+* **URL**: `http://localhost:5000/api/elections/1/status`
+* **Headers**:
+  * `Content-Type: application/json`
+  * `Authorization: Bearer <SUPER_ADMIN_TOKEN>`
+* **Body (raw JSON)**:
+```json
+{
+  "status": "UPCOMING"
+}
+```
+* **Expected Response (`200 OK`)**:
+```json
+{
+  "message": "Election status updated successfully"
+}
+```
+
+

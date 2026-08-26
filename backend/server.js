@@ -6,7 +6,7 @@ import authRouter from './routes/authRoutes.js'
 import testRoutes from "./routes/testRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import studentRoutes from "./routes/studentRoutes.js";
-
+import electionRoutes from "./routes/electionRoutes.js";
 
 dotenv.config();
 
@@ -20,6 +20,7 @@ app.use("/api/auth",authRouter);
 app.use("/api/test", testRoutes);
 app.use("/api/admins", adminRoutes);
 app.use("/api/students", studentRoutes);
+app.use("/api/elections", electionRoutes);
 
 
 
