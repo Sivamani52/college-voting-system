@@ -2,13 +2,12 @@ import pool from "../config/db.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-
 import {
   findUserByEmail,
   createUser
 } from "../models/userModel.js";
-
-
+import { generateOTP } from "../utils/otp.js";
+import { sendOTPEmail } from "../services/emailService.js";
 
 export async function login(req, res) {
   try {
@@ -44,7 +43,6 @@ export async function login(req, res) {
         message: "Invalid email or password"
       });
     }
-
 
     if (user.must_change_password) {
       return res.json({
@@ -96,7 +94,7 @@ export async function forgotPassword(req, res) {
       });
     }
 
-    const user = await userModel.findUserByEmail(email);
+    const user = await findUserByEmail(email);
 
     // Email was never created by Admin/Super Admin
     if (!user) {
@@ -154,7 +152,6 @@ export async function forgotPassword(req, res) {
   }
 }
 
-
 export async function verifyForgotPasswordOTP(req, res) {
   try {
     const { email, otp } = req.body;
@@ -165,7 +162,7 @@ export async function verifyForgotPasswordOTP(req, res) {
       });
     }
 
-    const user = await userModel.findUserByEmail(email);
+    const user = await findUserByEmail(email);
 
     if (!user) {
       return res.status(404).json({
@@ -227,7 +224,6 @@ export async function verifyForgotPasswordOTP(req, res) {
   }
 }
 
-
 export async function resetPassword(req, res) {
   try {
     const { userId, newPassword } = req.body;
@@ -271,7 +267,6 @@ export async function resetPassword(req, res) {
     });
   }
 }
-
 
 export async function changePassword(req, res) {
   try {

@@ -22,8 +22,9 @@ yarn-debug.log*
 yarn-error.log*
 *.log
 
-# Editor and OS files
-.DS_Store
-Thumbs.db
-.vscode/
-.idea/
+# Secrets & credentials
+credentials.txt
+backend/credentials.txt
+*.pem
+*.key
+

@@ -1,11 +1,11 @@
 import pool from "../config/db.js";
 
-export async function createAdmin({
+export async function createAdminRecord({
   userId,
   fullName,
   departmentId,
-  yearId,
-  sectionId
+  yearId = null,
+  sectionId = null
 }) {
   const [result] = await pool.query(
     `INSERT INTO admins
@@ -15,8 +15,8 @@ export async function createAdmin({
       userId,
       fullName,
       departmentId,
-      yearId,
-      sectionId
+      yearId || null,
+      sectionId || null
     ]
   );
 

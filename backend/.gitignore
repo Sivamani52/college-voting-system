@@ -87,3 +87,4 @@ uploads/
 # Secrets / certificates
 *.pem
 *.key
+credentials.txt

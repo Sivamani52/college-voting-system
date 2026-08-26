@@ -1,22 +1,20 @@
 import bcrypt from "bcryptjs";
-
 import {
   createUser,
-  findUserByEmail,
-  updateMustChangePassword
+  findUserByEmail
 } from "../models/userModel.js";
-
 import {
-  createAdmin
+  createAdminRecord
 } from "../models/adminModel.js";
-
 import {
   generateTemporaryPassword
 } from "../utils/passwordGenerator.js";
-
 import {
   sendTemporaryPasswordEmail
 } from "../services/emailService.js";
+import {
+  saveCredentialsToFile
+} from "../utils/credentialLogger.js";
 
 export async function createAdmin(req, res) {
   try {
@@ -32,51 +30,77 @@ export async function createAdmin(req, res) {
     if (
       !name ||
       !email ||
-      !departmentId ||
-      !yearId ||
-      !sectionId
+      !departmentId
     ) {
       return res.status(400).json({
-        message: "All fields are required"
+        message: "Name, email, and departmentId are required"
+      });
+    }
+
+    // Check if user already exists
+    const existingUser = await findUserByEmail(email);
+    if (existingUser) {
+      return res.status(400).json({
+        message: "A user with this email already exists"
       });
     }
 
     // Generate temporary password
-    const temporaryPassword =
-      generateTemporaryPassword();
+    const temporaryPassword = generateTemporaryPassword();
 
     // Hash password
-    const passwordHash =
-      await bcrypt.hash(temporaryPassword, 10);
+    const passwordHash = await bcrypt.hash(temporaryPassword, 10);
 
-    // Create admin
-    const userId =
-      await adminModel.createAdminUser({
-        email,
-        passwordHash,
-        name,
+    // Create user in users table
+    const userId = await createUser(email, passwordHash, "ADMIN", true);
+
+    // Create admin profile in admins table
+    const adminId = await createAdminRecord({
+      userId,
+      fullName: name,
+      departmentId,
+      yearId: yearId || null,
+      sectionId: sectionId || null
+    });
+
+    // Save credentials to file
+    await saveCredentialsToFile({
+      role: "ADMIN",
+      name,
+      email,
+      password: temporaryPassword,
+      extraInfo: {
+        userId,
+        adminId,
         departmentId,
-        yearId,
-        sectionId
-      });
+        yearId: yearId || null,
+        sectionId: sectionId || null
+      }
+    });
 
     // Send credentials through Brevo
-    await sendTemporaryPasswordEmail(
-      email,
-      name,
-      temporaryPassword
-    );
+    try {
+      await sendTemporaryPasswordEmail(
+        email,
+        name,
+        temporaryPassword
+      );
+    } catch (emailError) {
+      console.error("Warning: Failed to send temporary password email:", emailError.message);
+    }
 
     res.status(201).json({
       message: "Admin created successfully",
-      userId
+      userId,
+      adminId,
+      temporaryPassword
     });
 
   } catch (error) {
     console.error("Create admin error:", error);
 
     res.status(500).json({
-      message: "Failed to create admin"
+      message: error.message || "Failed to create admin"
     });
   }
 }

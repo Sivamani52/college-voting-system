@@ -5,6 +5,7 @@ import pool from "./config/db.js";
 import authRouter from './routes/authRoutes.js'
 import testRoutes from "./routes/testRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
+import studentRoutes from "./routes/studentRoutes.js";
 
 
 dotenv.config();
@@ -18,6 +19,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api/auth",authRouter);
 app.use("/api/test", testRoutes);
 app.use("/api/admins", adminRoutes);
+app.use("/api/students", studentRoutes);
+
 
 
 app.get("/", (req, res) => {

@@ -9,15 +9,21 @@ export async function findUserByEmail(email) {
   return rows[0];
 }
 
-export async function createUser(email, passwordHash, role) {
+export async function createUser(email, passwordHash, role, mustChangePassword = false) {
   const [result] = await pool.query(
-    `INSERT INTO users (email, password_hash, role)
-     VALUES (?, ?, ?)`,
-    [email, passwordHash, role]
+    `INSERT INTO users (email, password_hash, role, must_change_password)
+     VALUES (?, ?, ?, ?)`,
+    [email, passwordHash, role, mustChangePassword]
   );
 
   return result.insertId;
 }
 
+export async function updateMustChangePassword(userId, mustChangePassword) {
+  const [result] = await pool.query(
+    `UPDATE users SET must_change_password = ? WHERE id = ?`,
+    [mustChangePassword, userId]
+  );
 
-
+  return result.affectedRows > 0;
+}
