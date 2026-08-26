@@ -7,6 +7,7 @@ import testRoutes from "./routes/testRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import studentRoutes from "./routes/studentRoutes.js";
 import electionRoutes from "./routes/electionRoutes.js";
+import positionRoutes from "./routes/positionRoutes.js";
 
 dotenv.config();
 
@@ -21,6 +22,7 @@ app.use("/api/test", testRoutes);
 app.use("/api/admins", adminRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/elections", electionRoutes);
+app.use("/api/positions",positionRoutes);
 
 
 

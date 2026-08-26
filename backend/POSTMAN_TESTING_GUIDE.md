@@ -459,4 +459,101 @@ npm run dev
 }
 ```
 
+---
+
+### Step 12: Position Management (Super Admin)
+
+#### 12a. Create a Position
+* **Method**: `POST`
+* **URL**: `http://localhost:5000/api/positions`
+* **Headers**:
+  * `Content-Type: application/json`
+  * `Authorization: Bearer <SUPER_ADMIN_TOKEN>`
+* **Body (raw JSON)**:
+```json
+{
+  "electionId": 1,
+  "name": "President",
+  "description": "Student Council President"
+}
+```
+* **Expected Response (`201 Created`)**:
+```json
+{
+  "message": "Position created successfully",
+  "positionId": 1
+}
+```
+
+#### 12b. Get Positions by Election
+* **Method**: `GET`
+* **URL**: `http://localhost:5000/api/positions/election/1`
+* **Headers**:
+  * `Authorization: Bearer <SUPER_ADMIN_TOKEN>` (or `ADMIN` / `STUDENT` token)
+* **Expected Response (`200 OK`)**:
+```json
+{
+  "positions": [
+    {
+      "id": 1,
+      "election_id": 1,
+      "name": "President",
+      "description": "Student Council President",
+      "created_at": "..."
+    }
+  ]
+}
+```
+
+#### 12c. Get Position by ID
+* **Method**: `GET`
+* **URL**: `http://localhost:5000/api/positions/1`
+* **Headers**:
+  * `Authorization: Bearer <SUPER_ADMIN_TOKEN>` (or `ADMIN` / `STUDENT` token)
+* **Expected Response (`200 OK`)**:
+```json
+{
+  "position": {
+    "id": 1,
+    "election_id": 1,
+    "name": "President",
+    "description": "Student Council President",
+    "created_at": "..."
+  }
+}
+```
+
+#### 12d. Update a Position
+* **Method**: `PUT`
+* **URL**: `http://localhost:5000/api/positions/1`
+* **Headers**:
+  * `Content-Type: application/json`
+  * `Authorization: Bearer <SUPER_ADMIN_TOKEN>`
+* **Body (raw JSON)**:
+```json
+{
+  "name": "Student Council President",
+  "description": "Overall lead representative for student affairs"
+}
+```
+* **Expected Response (`200 OK`)**:
+```json
+{
+  "message": "Position updated successfully"
+}
+```
+
+#### 12e. Delete a Position
+* **Method**: `DELETE`
+* **URL**: `http://localhost:5000/api/positions/1`
+* **Headers**:
+  * `Authorization: Bearer <SUPER_ADMIN_TOKEN>`
+* **Expected Response (`200 OK`)**:
+```json
+{
+  "message": "Position deleted successfully"
+}
+```
+
+
 
