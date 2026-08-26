@@ -9,6 +9,7 @@ import studentRoutes from "./routes/studentRoutes.js";
 import electionRoutes from "./routes/electionRoutes.js";
 import positionRoutes from "./routes/positionRoutes.js";
 import candidateRoutes from "./routes/candidateRoutes.js";
+import eligibleVoterRoutes from "./routes/eligibleVoterRoutes.js";
 
 dotenv.config();
 
@@ -28,6 +29,8 @@ app.use(
   "/api/candidates",
   candidateRoutes
 );
+app.use("/api/eligible-voters",eligibleVoterRoutes);
+
 
 
 

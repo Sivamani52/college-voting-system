@@ -698,6 +698,140 @@ npm run dev
 }
 ```
 
+---
+
+### Step 14: Eligible Voter Management
+
+#### 14a. Add a Single Eligible Voter (Super Admin / Admin)
+* **Method**: `POST`
+* **URL**: `http://localhost:5000/api/eligible-voters`
+* **Headers**:
+  * `Content-Type: application/json`
+  * `Authorization: Bearer <SUPER_ADMIN_TOKEN>` (or `ADMIN` token)
+* **Body (raw JSON)**:
+```json
+{
+  "electionId": 1,
+  "studentId": "21CS001"
+}
+```
+*(Note: `studentId` can be either the student roll number `"21CS001"` or the internal student ID `1`)*
+* **Expected Response (`201 Created`)**:
+```json
+{
+  "message": "Student added as eligible voter",
+  "eligibleVoterId": 1
+}
+```
+
+#### 14b. Bulk Add Eligible Voters by Department / Year / Section (Super Admin / Admin)
+* **Method**: `POST`
+* **URL**: `http://localhost:5000/api/eligible-voters/bulk`
+* **Headers**:
+  * `Content-Type: application/json`
+  * `Authorization: Bearer <SUPER_ADMIN_TOKEN>` (or `ADMIN` token)
+* **Body (raw JSON)**:
+```json
+{
+  "electionId": 1,
+  "departmentId": 1,
+  "yearId": 1,
+  "sectionId": 1
+}
+```
+*(Or specify an explicit array of student IDs: `{"electionId": 1, "studentIds": ["21CS001", "21CS002"]}`)*
+* **Expected Response (`201 Created`)**:
+```json
+{
+  "message": "1 eligible voters added successfully",
+  "totalAdded": 1
+}
+```
+
+#### 14c. Check Student Eligibility (Student / Admin / Super Admin)
+* **Method**: `GET`
+* **URL**: `http://localhost:5000/api/eligible-voters/check/1`
+* **Headers**:
+  * `Authorization: Bearer <STUDENT_TOKEN>`
+* **Expected Response (`200 OK`)**:
+```json
+{
+  "electionId": 1,
+  "isEligible": true,
+  "studentId": 1,
+  "studentCode": "21CS001"
+}
+```
+
+#### 14d. Get All Eligible Voters for an Election (Super Admin / Admin)
+* **Method**: `GET`
+* **URL**: `http://localhost:5000/api/eligible-voters/election/1`
+* **Headers**:
+  * `Authorization: Bearer <SUPER_ADMIN_TOKEN>` (or `ADMIN` token)
+* **Expected Response (`200 OK`)**:
+```json
+{
+  "eligibleVoters": [
+    {
+      "id": 1,
+      "election_id": 1,
+      "student_id": 1,
+      "created_at": "...",
+      "full_name": "John Doe",
+      "student_code": "21CS001",
+      "department_id": 1,
+      "year_id": 1,
+      "section_id": 1
+    }
+  ]
+}
+```
+
+#### 14e. Get Eligible Voter by ID (Super Admin / Admin)
+* **Method**: `GET`
+* **URL**: `http://localhost:5000/api/eligible-voters/1`
+* **Headers**:
+  * `Authorization: Bearer <SUPER_ADMIN_TOKEN>` (or `ADMIN` token)
+* **Expected Response (`200 OK`)**:
+```json
+{
+  "eligibleVoter": {
+    "id": 1,
+    "election_id": 1,
+    "student_id": 1,
+    "created_at": "...",
+    "full_name": "John Doe",
+    "student_code": "21CS001"
+  }
+}
+```
+
+#### 14f. Remove Eligible Voter by ID (Super Admin / Admin)
+* **Method**: `DELETE`
+* **URL**: `http://localhost:5000/api/eligible-voters/1`
+* **Headers**:
+  * `Authorization: Bearer <SUPER_ADMIN_TOKEN>` (or `ADMIN` token)
+* **Expected Response (`200 OK`)**:
+```json
+{
+  "message": "Eligible voter removed successfully"
+}
+```
+
+#### 14g. Remove All Eligible Voters for an Election (Super Admin / Admin)
+* **Method**: `DELETE`
+* **URL**: `http://localhost:5000/api/eligible-voters/election/1`
+* **Headers**:
+  * `Authorization: Bearer <SUPER_ADMIN_TOKEN>` (or `ADMIN` token)
+* **Expected Response (`200 OK`)**:
+```json
+{
+  "message": "1 eligible voters removed successfully",
+  "totalRemoved": 1
+}
+```
+
+
 
 
 
