@@ -285,3 +285,101 @@ npm run dev
   }
 }
 ```
+
+---
+
+### Step 9: Create a Student (Admin or Super Admin)
+* **Method**: `POST`
+* **URL**: `http://localhost:5000/api/students`
+* **Headers**:
+  * `Content-Type: application/json`
+  * `Authorization: Bearer <ADMIN_OR_SUPER_ADMIN_TOKEN>`
+* **Body (raw JSON)**:
+```json
+{
+  "studentId": "21CS001",
+  "fullName": "John Doe",
+  "email": "john.doe@college.com",
+  "departmentId": 1,
+  "yearId": 1,
+  "sectionId": 1,
+  "phone": "9876543210"
+}
+```
+* **Expected Response (`201 Created`)**:
+```json
+{
+  "message": "Student created successfully",
+  "userId": 3,
+  "studentRecordId": 1,
+  "studentId": "21CS001",
+  "temporaryPassword": "exampleTemporaryPassword123"
+}
+```
+> 💡 The temporary password will also be automatically appended to `backend/credentials.txt`!
+
+---
+
+### Step 10: Student First Login & Password Setup
+
+#### 10a. First Login with Temporary Password
+* **Method**: `POST`
+* **URL**: `http://localhost:5000/api/auth/login`
+* **Body (raw JSON)**:
+```json
+{
+  "email": "john.doe@college.com",
+  "password": "<PASTE_STUDENT_TEMPORARY_PASSWORD_HERE>"
+}
+```
+* **Expected Response (`200 OK`)**:
+```json
+{
+  "message": "Password change required",
+  "requiresPasswordChange": true,
+  "userId": 3,
+  "role": "STUDENT"
+}
+```
+
+#### 10b. Change Temporary Password
+* **Method**: `POST`
+* **URL**: `http://localhost:5000/api/auth/change-password`
+* **Body (raw JSON)**:
+```json
+{
+  "userId": 3,
+  "currentPassword": "<PASTE_STUDENT_TEMPORARY_PASSWORD_HERE>",
+  "newPassword": "StudentPassword@123"
+}
+```
+* **Expected Response (`200 OK`)**:
+```json
+{
+  "message": "Password changed successfully"
+}
+```
+
+#### 10c. Login with New Password
+* **Method**: `POST`
+* **URL**: `http://localhost:5000/api/auth/login`
+* **Body (raw JSON)**:
+```json
+{
+  "email": "john.doe@college.com",
+  "password": "StudentPassword@123"
+}
+```
+* **Expected Response (`200 OK`)**:
+```json
+{
+  "message": "Login successful",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": 3,
+    "email": "john.doe@college.com",
+    "role": "STUDENT"
+  }
+}
+```
+

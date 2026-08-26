@@ -1,9 +1,26 @@
 import bcrypt from "bcryptjs";
-import { createUser, findUserByEmail } from "../models/userModel.js";
-import { createStudentRecord, findStudentByStudentId } from "../models/studentModel.js";
-import { generateTemporaryPassword } from "../utils/passwordGenerator.js";
-import { sendTemporaryPasswordEmail } from "../services/emailService.js";
-import { saveCredentialsToFile } from "../utils/credentialLogger.js";
+
+import {
+  createUser,
+  findUserByEmail
+} from "../models/userModel.js";
+
+import {
+  createStudentRecord,
+  findStudentByStudentId
+} from "../models/studentModel.js";
+
+import {
+  generateTemporaryPassword
+} from "../utils/passwordGenerator.js";
+
+import {
+  sendTemporaryPasswordEmail
+} from "../services/emailService.js";
+
+import {
+  saveCredentialsToFile
+} from "../utils/credentialLogger.js";
 
 export async function createStudent(req, res) {
   try {
@@ -14,45 +31,64 @@ export async function createStudent(req, res) {
       departmentId,
       yearId,
       sectionId,
-      phone,
-      password
+      phone
     } = req.body;
 
-    // Validation
-    if (!studentId || !fullName || !email || !departmentId || !yearId || !sectionId) {
+    // -------------------------
+    // 1. Validate input
+    // -------------------------
+    if (
+      !studentId ||
+      !fullName ||
+      !email ||
+      !departmentId ||
+      !yearId ||
+      !sectionId
+    ) {
       return res.status(400).json({
-        message: "studentId, fullName, email, departmentId, yearId, and sectionId are required"
+        message: "Student ID, name, email, departmentId, yearId and sectionId are required"
       });
     }
 
-    // Check if user with email already exists
+    // -------------------------
+    // 2. Check email uniqueness
+    // -------------------------
     const existingUser = await findUserByEmail(email);
     if (existingUser) {
-      return res.status(400).json({
+      return res.status(409).json({
         message: "A user with this email already exists"
       });
     }
 
-    // Check if studentId already exists
+    // -------------------------
+    // 3. Check student ID uniqueness
+    // -------------------------
     const existingStudent = await findStudentByStudentId(studentId);
     if (existingStudent) {
-      return res.status(400).json({
+      return res.status(409).json({
         message: "A student with this Student ID already exists"
       });
     }
 
-    // Password generation: use provided password or auto-generate temporary password
-    const studentPassword = password || generateTemporaryPassword();
-    const mustChangePassword = !password; // If generated, must change on first login
+    // -------------------------
+    // 4. Generate temporary password
+    // -------------------------
+    const temporaryPassword = generateTemporaryPassword();
 
-    // Hash password
-    const passwordHash = await bcrypt.hash(studentPassword, 10);
+    // -------------------------
+    // 5. Hash password
+    // -------------------------
+    const passwordHash = await bcrypt.hash(temporaryPassword, 10);
 
-    // Create user in users table
-    const userId = await createUser(email, passwordHash, "STUDENT", mustChangePassword);
+    // -------------------------
+    // 6. Create user (with mustChangePassword = true)
+    // -------------------------
+    const userId = await createUser(email, passwordHash, "STUDENT", true);
 
-    // Create student profile in students table
-    const studentTableId = await createStudentRecord({
+    // -------------------------
+    // 7. Create student profile
+    // -------------------------
+    const studentRecordId = await createStudentRecord({
       userId,
       studentId,
       fullName,
@@ -62,16 +98,18 @@ export async function createStudent(req, res) {
       phone: phone || null
     });
 
-    // Save credentials to file
+    // -------------------------
+    // 8. Save credentials to credentials.txt file
+    // -------------------------
     await saveCredentialsToFile({
       role: "STUDENT",
       name: fullName,
       studentId,
       email,
-      password: studentPassword,
+      password: temporaryPassword,
       extraInfo: {
         userId,
-        studentTableId,
+        studentRecordId,
         departmentId,
         yearId,
         sectionId,
@@ -79,24 +117,31 @@ export async function createStudent(req, res) {
       }
     });
 
-    // Send credentials through Brevo email if possible
+    // -------------------------
+    // 9. Send credentials via email (fail-safe)
+    // -------------------------
     try {
-      await sendTemporaryPasswordEmail(email, fullName, studentPassword);
+      await sendTemporaryPasswordEmail(
+        email,
+        fullName,
+        temporaryPassword
+      );
     } catch (emailError) {
-      console.error("Warning: Failed to send student credentials email:", emailError.message);
+      console.error("Warning: Failed to send temporary password email to student:", emailError.message);
     }
 
-    res.status(201).json({
+    return res.status(201).json({
       message: "Student created successfully",
       userId,
-      studentTableId,
+      studentRecordId,
       studentId,
-      temporaryPassword: studentPassword
+      temporaryPassword
     });
 
   } catch (error) {
     console.error("Create student error:", error);
-    res.status(500).json({
+
+    return res.status(500).json({
       message: error.message || "Failed to create student"
     });
   }
