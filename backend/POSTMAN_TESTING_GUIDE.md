@@ -555,5 +555,149 @@ npm run dev
 }
 ```
 
+---
+
+### Step 13: Candidate Management
+
+#### 13a. Create a Candidate (Super Admin)
+* **Method**: `POST`
+* **URL**: `http://localhost:5000/api/candidates`
+* **Headers**:
+  * `Content-Type: application/json`
+  * `Authorization: Bearer <SUPER_ADMIN_TOKEN>`
+* **Body (raw JSON)**:
+```json
+{
+  "electionId": 1,
+  "positionId": 1,
+  "studentId": "21CS001",
+  "manifesto": "Committed to improving campus facilities and student voice",
+  "photoUrl": "https://example.com/photos/john_doe.jpg"
+}
+```
+*(Note: `studentId` can be either the student roll number `"21CS001"` or the internal student ID `1`)*
+* **Expected Response (`201 Created`)**:
+```json
+{
+  "message": "Candidate created successfully",
+  "candidateId": 1
+}
+```
+
+#### 13b. Get Candidates by Election
+* **Method**: `GET`
+* **URL**: `http://localhost:5000/api/candidates/election/1`
+* **Headers**:
+  * `Authorization: Bearer <SUPER_ADMIN_TOKEN>` (or `ADMIN` / `STUDENT` token)
+* **Expected Response (`200 OK`)**:
+```json
+{
+  "candidates": [
+    {
+      "id": 1,
+      "election_id": 1,
+      "position_id": 1,
+      "student_id": 1,
+      "manifesto": "Committed to improving campus facilities and student voice",
+      "photo_url": "https://example.com/photos/john_doe.jpg",
+      "status": "ACTIVE",
+      "full_name": "John Doe",
+      "student_code": "21CS001",
+      "department_id": 1,
+      "year_id": 1,
+      "section_id": 1,
+      "position_name": "President"
+    }
+  ]
+}
+```
+
+#### 13c. Get Candidates by Position
+* **Method**: `GET`
+* **URL**: `http://localhost:5000/api/candidates/position/1`
+* **Headers**:
+  * `Authorization: Bearer <SUPER_ADMIN_TOKEN>` (or `ADMIN` / `STUDENT` token)
+* **Expected Response (`200 OK`)**:
+```json
+{
+  "candidates": [
+    {
+      "id": 1,
+      "election_id": 1,
+      "position_id": 1,
+      "student_id": 1,
+      "manifesto": "Committed to improving campus facilities and student voice",
+      "photo_url": "https://example.com/photos/john_doe.jpg",
+      "status": "ACTIVE",
+      "full_name": "John Doe",
+      "student_code": "21CS001",
+      "department_id": 1,
+      "year_id": 1,
+      "section_id": 1,
+      "position_name": "President"
+    }
+  ]
+}
+```
+
+#### 13d. Get Candidate by ID
+* **Method**: `GET`
+* **URL**: `http://localhost:5000/api/candidates/1`
+* **Headers**:
+  * `Authorization: Bearer <SUPER_ADMIN_TOKEN>` (or `ADMIN` / `STUDENT` token)
+* **Expected Response (`200 OK`)**:
+```json
+{
+  "candidate": {
+    "id": 1,
+    "election_id": 1,
+    "position_id": 1,
+    "student_id": 1,
+    "manifesto": "Committed to improving campus facilities and student voice",
+    "photo_url": "https://example.com/photos/john_doe.jpg",
+    "status": "ACTIVE",
+    "full_name": "John Doe",
+    "student_code": "21CS001",
+    "department_id": 1,
+    "year_id": 1,
+    "section_id": 1,
+    "position_name": "President"
+  }
+}
+```
+
+#### 13e. Update Candidate (Super Admin)
+* **Method**: `PUT`
+* **URL**: `http://localhost:5000/api/candidates/1`
+* **Headers**:
+  * `Content-Type: application/json`
+  * `Authorization: Bearer <SUPER_ADMIN_TOKEN>`
+* **Body (raw JSON)**:
+```json
+{
+  "manifesto": "Updated manifesto: Empowering all students through innovation and transparency",
+  "status": "ACTIVE"
+}
+```
+* **Expected Response (`200 OK`)**:
+```json
+{
+  "message": "Candidate updated successfully"
+}
+```
+
+#### 13f. Delete Candidate (Super Admin)
+* **Method**: `DELETE`
+* **URL**: `http://localhost:5000/api/candidates/1`
+* **Headers**:
+  * `Authorization: Bearer <SUPER_ADMIN_TOKEN>`
+* **Expected Response (`200 OK`)**:
+```json
+{
+  "message": "Candidate deleted successfully"
+}
+```
+
+
 
 
