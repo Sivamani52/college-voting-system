@@ -125,19 +125,37 @@ export async function getElectionResults(electionId) {
     `SELECT 
        p.id AS position_id,
        p.name AS position_name,
+       p.description AS position_description,
        c.id AS candidate_id,
+       c.student_id,
        s.full_name AS candidate_name,
        s.student_id AS student_code,
+       c.manifesto,
        c.photo_url,
        c.status AS candidate_status,
        COUNT(v.id) AS vote_count
      FROM positions p
-     JOIN candidates c ON c.position_id = p.id
-     JOIN students s ON c.student_id = s.id
-     LEFT JOIN votes v ON v.candidate_id = c.id
+     LEFT JOIN candidates c 
+       ON c.position_id = p.id AND c.election_id = p.election_id
+     LEFT JOIN students s 
+       ON c.student_id = s.id
+     LEFT JOIN votes v 
+       ON v.candidate_id = c.id 
+       AND v.position_id = p.id 
+       AND v.election_id = p.election_id
      WHERE p.election_id = ?
-     GROUP BY p.id, c.id
-     ORDER BY p.id ASC, vote_count DESC`,
+     GROUP BY 
+       p.id, 
+       p.name, 
+       p.description,
+       c.id, 
+       c.student_id,
+       s.full_name, 
+       s.student_id, 
+       c.manifesto,
+       c.photo_url, 
+       c.status
+     ORDER BY p.id ASC, vote_count DESC, c.id ASC`,
     [electionId]
   )
 
@@ -148,17 +166,55 @@ export async function getElectionResults(electionId) {
       resultsByPosition[row.position_id] = {
         positionId: row.position_id,
         positionName: row.position_name,
-        candidates: []
+        positionDescription: row.position_description,
+        totalVotes: 0,
+        candidates: [],
+        winner: null
       }
     }
-    resultsByPosition[row.position_id].candidates.push({
-      candidateId: row.candidate_id,
-      candidateName: row.candidate_name,
-      studentCode: row.student_code,
-      photoUrl: row.photo_url,
-      candidateStatus: row.candidate_status,
-      voteCount: Number(row.vote_count)
+
+    if (row.candidate_id) {
+      const voteCount = Number(row.vote_count) || 0
+      resultsByPosition[row.position_id].totalVotes += voteCount
+      resultsByPosition[row.position_id].candidates.push({
+        candidateId: row.candidate_id,
+        studentId: row.student_id,
+        candidateName: row.candidate_name,
+        studentCode: row.student_code,
+        manifesto: row.manifesto,
+        photoUrl: row.photo_url,
+        candidateStatus: row.candidate_status,
+        voteCount: voteCount
+      })
+    }
+  }
+
+  // Calculate percentages and winner for each position
+  for (const posId of Object.keys(resultsByPosition)) {
+    const pos = resultsByPosition[posId]
+    const totalPosVotes = pos.totalVotes
+
+    pos.candidates.forEach(cand => {
+      cand.percentage = totalPosVotes > 0 
+        ? ((cand.voteCount / totalPosVotes) * 100).toFixed(2) + '%' 
+        : '0.00%'
     })
+
+    if (pos.candidates.length > 0) {
+      const highestVotes = Math.max(...pos.candidates.map(c => c.voteCount))
+      if (highestVotes > 0) {
+        const winners = pos.candidates.filter(c => c.voteCount === highestVotes)
+        if (winners.length === 1) {
+          pos.winner = {
+            candidateId: winners[0].candidateId,
+            candidateName: winners[0].candidateName,
+            studentCode: winners[0].studentCode,
+            photoUrl: winners[0].photoUrl,
+            voteCount: highestVotes
+          }
+        }
+      }
+    }
   }
 
   return Object.values(resultsByPosition)
@@ -166,36 +222,36 @@ export async function getElectionResults(electionId) {
 
 // Get Election Turnout Statistics
 export async function getElectionStats(electionId) {
-  const [[eligibleCountRow]] = await pool.query(
+  const [eligibleCountRows] = await pool.query(
     `SELECT COUNT(*) AS total_eligible
      FROM eligible_voters
      WHERE election_id = ?`,
     [electionId]
   )
 
-  const [[votedStudentsRow]] = await pool.query(
+  const [votedStudentsRows] = await pool.query(
     `SELECT COUNT(DISTINCT student_id) AS total_voted_students
      FROM votes
      WHERE election_id = ?`,
     [electionId]
   )
 
-  const [[totalVotesRow]] = await pool.query(
+  const [totalVotesRows] = await pool.query(
     `SELECT COUNT(*) AS total_votes_cast
      FROM votes
      WHERE election_id = ?`,
     [electionId]
   )
 
-  const totalEligible = eligibleCountRow.total_eligible || 0
-  const votedStudents = votedStudentsRow.total_voted_students || 0
-  const totalVotesCast = totalVotesRow.total_votes_cast || 0
+  const totalEligible = eligibleCountRows[0]?.total_eligible || 0
+  const votedStudents = votedStudentsRows[0]?.total_voted_students || 0
+  const totalVotesCast = totalVotesRows[0]?.total_votes_cast || 0
   const turnoutPercentage = totalEligible > 0 ? ((votedStudents / totalEligible) * 100).toFixed(2) : "0.00"
 
   return {
-    totalEligibleVoters: totalEligible,
-    uniqueVotersParticipated: votedStudents,
-    totalVotesCast,
+    totalEligibleVoters: Number(totalEligible),
+    uniqueVotersParticipated: Number(votedStudents),
+    totalVotesCast: Number(totalVotesCast),
     turnoutPercentage: `${turnoutPercentage}%`
   }
 }

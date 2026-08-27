@@ -11,6 +11,7 @@ import positionRoutes from "./routes/positionRoutes.js";
 import candidateRoutes from "./routes/candidateRoutes.js";
 import eligibleVoterRoutes from "./routes/eligibleVoterRoutes.js";
 import voteRoutes from "./routes/voteRoutes.js";
+import resultRoutes from "./routes/resultRoutes.js";
 
 dotenv.config();
 
@@ -26,12 +27,10 @@ app.use("/api/admins", adminRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/elections", electionRoutes);
 app.use("/api/positions",positionRoutes);
-app.use(
-  "/api/candidates",
-  candidateRoutes
-);
+app.use("/api/candidates",candidateRoutes);
 app.use("/api/eligible-voters",eligibleVoterRoutes);
 app.use("/api/votes", voteRoutes);
+app.use("/api/results", resultRoutes);
 
 
 

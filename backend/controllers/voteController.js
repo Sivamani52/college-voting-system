@@ -259,6 +259,12 @@ export async function getElectionResultsController(req, res) {
     const { electionId } = req.params
     const userRole = req.user?.role
 
+    if (!electionId || isNaN(Number(electionId))) {
+      return res.status(400).json({
+        message: 'Valid election ID is required.'
+      })
+    }
+
     const election = await voteModel.getElectionById(electionId)
     if (!election) {
       return res.status(404).json({
@@ -280,6 +286,7 @@ export async function getElectionResultsController(req, res) {
       election: {
         id: election.id,
         title: election.title,
+        description: election.description,
         status: election.status,
         startDate: election.start_date,
         endDate: election.end_date
@@ -290,7 +297,8 @@ export async function getElectionResultsController(req, res) {
   } catch (error) {
     console.error('Get election results error:', error)
     return res.status(500).json({
-      message: 'Failed to fetch election results.'
+      message: 'Failed to fetch election results.',
+      error: error.message
     })
   }
 }
@@ -299,6 +307,12 @@ export async function getElectionResultsController(req, res) {
 export async function getElectionStatsController(req, res) {
   try {
     const { electionId } = req.params
+
+    if (!electionId || isNaN(Number(electionId))) {
+      return res.status(400).json({
+        message: 'Valid election ID is required.'
+      })
+    }
 
     const election = await voteModel.getElectionById(electionId)
     if (!election) {
@@ -316,7 +330,8 @@ export async function getElectionStatsController(req, res) {
   } catch (error) {
     console.error('Get election stats error:', error)
     return res.status(500).json({
-      message: 'Failed to fetch election statistics.'
+      message: 'Failed to fetch election statistics.',
+      error: error.message
     })
   }
 }
