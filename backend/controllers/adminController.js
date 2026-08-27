@@ -4,7 +4,10 @@ import {
   findUserByEmail
 } from "../models/userModel.js";
 import {
-  createAdminRecord
+  createAdminRecord,
+  findAllAdmins,
+  findAdminById,
+  findAdminByUserId
 } from "../models/adminModel.js";
 import {
   generateTemporaryPassword
@@ -101,6 +104,43 @@ export async function createAdmin(req, res) {
 
     res.status(500).json({
       message: error.message || "Failed to create admin"
+    });
+  }
+}
+
+export async function getAllAdminsController(req, res) {
+  try {
+    const admins = await findAllAdmins();
+
+    return res.json({
+      admins
+    });
+  } catch (error) {
+    console.error("Get all admins error:", error);
+    return res.status(500).json({
+      message: "Failed to fetch admins"
+    });
+  }
+}
+
+export async function getAdminProfileController(req, res) {
+  try {
+    const userId = req.user?.userId || req.user?.id;
+
+    const admin = await findAdminByUserId(userId);
+    if (!admin) {
+      return res.status(404).json({
+        message: "Admin profile not found"
+      });
+    }
+
+    return res.json({
+      admin
+    });
+  } catch (error) {
+    console.error("Get admin profile error:", error);
+    return res.status(500).json({
+      message: "Failed to fetch admin profile"
     });
   }
 }

@@ -819,6 +819,7 @@ npm run dev
 ```
 
 #### 14g. Remove All Eligible Voters for an Election (Super Admin / Admin)
+
 * **Method**: `DELETE`
 * **URL**: `http://localhost:5000/api/eligible-voters/election/1`
 * **Headers**:
@@ -830,6 +831,155 @@ npm run dev
   "totalRemoved": 1
 }
 ```
+
+---
+
+### Step 15: Voting & Results Management
+
+#### 15a. Set Election Status to ACTIVE (Required for voting)
+* **Method**: `PATCH`
+* **URL**: `http://localhost:5000/api/elections/1/status`
+* **Headers**:
+  * `Content-Type: application/json`
+  * `Authorization: Bearer <SUPER_ADMIN_TOKEN>`
+* **Body (raw JSON)**:
+```json
+{
+  "status": "ACTIVE"
+}
+```
+* **Expected Response (`200 OK`)**:
+```json
+{
+  "message": "Election status updated successfully"
+}
+```
+
+#### 15b. Cast a Vote (Student)
+* **Method**: `POST`
+* **URL**: `http://localhost:5000/api/votes`
+* **Headers**:
+  * `Content-Type: application/json`
+  * `Authorization: Bearer <STUDENT_TOKEN>`
+* **Body (raw JSON)**:
+```json
+{
+  "electionId": 1,
+  "positionId": 1,
+  "candidateId": 1
+}
+```
+* **Expected Response (`201 Created`)**:
+```json
+{
+  "message": "Vote cast successfully.",
+  "vote": {
+    "electionId": 1,
+    "positionId": 1,
+    "candidateId": 1
+  }
+}
+```
+*(Note: Attempting to vote again for the same position will return `409 Conflict: You have already voted for this position`)*.
+
+#### 15c. Check My Cast Votes (Student)
+* **Method**: `GET`
+* **URL**: `http://localhost:5000/api/votes/my-votes/1`
+* **Headers**:
+  * `Authorization: Bearer <STUDENT_TOKEN>`
+* **Expected Response (`200 OK`)**:
+```json
+{
+  "electionId": 1,
+  "votesCast": [
+    {
+      "position_id": 1,
+      "candidate_id": 1,
+      "voted_at": "...",
+      "position_name": "President",
+      "candidate_name": "John Doe"
+    }
+  ]
+}
+```
+
+#### 15d. View Turnout Statistics (Super Admin / Admin)
+* **Method**: `GET`
+* **URL**: `http://localhost:5000/api/votes/stats/1`
+* **Headers**:
+  * `Authorization: Bearer <SUPER_ADMIN_TOKEN>` (or `ADMIN` token)
+* **Expected Response (`200 OK`)**:
+```json
+{
+  "electionId": 1,
+  "stats": {
+    "totalEligibleVoters": 1,
+    "uniqueVotersParticipated": 1,
+    "totalVotesCast": 1,
+    "turnoutPercentage": "100.00%"
+  }
+}
+```
+
+#### 15e. Publish Results (Super Admin)
+* **Method**: `PATCH`
+* **URL**: `http://localhost:5000/api/elections/1/status`
+* **Headers**:
+  * `Content-Type: application/json`
+  * `Authorization: Bearer <SUPER_ADMIN_TOKEN>`
+* **Body (raw JSON)**:
+```json
+{
+  "status": "RESULT_PUBLISHED"
+}
+```
+* **Expected Response (`200 OK`)**:
+```json
+{
+  "message": "Election status updated successfully"
+}
+```
+
+#### 15f. View Election Results (Student / Admin / Super Admin)
+* **Method**: `GET`
+* **URL**: `http://localhost:5000/api/votes/results/1`
+* **Headers**:
+  * `Authorization: Bearer <STUDENT_TOKEN>` (or `ADMIN` / `SUPER_ADMIN` token)
+* **Expected Response (`200 OK`)**:
+```json
+{
+  "election": {
+    "id": 1,
+    "title": "College Student Council Election 2026",
+    "status": "RESULT_PUBLISHED",
+    "startDate": "...",
+    "endDate": "..."
+  },
+  "stats": {
+    "totalEligibleVoters": 1,
+    "uniqueVotersParticipated": 1,
+    "totalVotesCast": 1,
+    "turnoutPercentage": "100.00%"
+  },
+  "results": [
+    {
+      "positionId": 1,
+      "positionName": "President",
+      "candidates": [
+        {
+          "candidateId": 1,
+          "candidateName": "John Doe",
+          "studentCode": "21CS001",
+          "photoUrl": "https://example.com/photos/john_doe.jpg",
+          "candidateStatus": "ACTIVE",
+          "voteCount": 1
+        }
+      ]
+    }
+  ]
+}
+```
+
 
 
 

@@ -7,8 +7,12 @@ import {
 
 import {
   createStudentRecord,
-  findStudentByStudentId
+  findStudentByStudentId,
+  findStudentById,
+  findStudentByUserId,
+  findAllStudents
 } from "../models/studentModel.js";
+
 
 import {
   generateTemporaryPassword
@@ -143,6 +147,77 @@ export async function createStudent(req, res) {
 
     return res.status(500).json({
       message: error.message || "Failed to create student"
+    });
+  }
+}
+
+export async function getAllStudentsController(req, res) {
+  try {
+    const { departmentId, yearId, sectionId, status } = req.query;
+
+    const students = await findAllStudents({
+      departmentId: departmentId ? Number(departmentId) : undefined,
+      yearId: yearId ? Number(yearId) : undefined,
+      sectionId: sectionId ? Number(sectionId) : undefined,
+      status
+    });
+
+    return res.json({
+      students
+    });
+
+  } catch (error) {
+    console.error("Get all students error:", error);
+    return res.status(500).json({
+      message: "Failed to fetch students"
+    });
+  }
+}
+
+export async function getStudentByIdController(req, res) {
+  try {
+    const { id } = req.params;
+
+    const student = await findStudentById(id);
+
+    if (!student) {
+      return res.status(404).json({
+        message: "Student not found"
+      });
+    }
+
+    return res.json({
+      student
+    });
+
+  } catch (error) {
+    console.error("Get student by ID error:", error);
+    return res.status(500).json({
+      message: "Failed to fetch student"
+    });
+  }
+}
+
+export async function getStudentProfileController(req, res) {
+  try {
+    const userId = req.user?.userId || req.user?.id;
+
+    const student = await findStudentByUserId(userId);
+
+    if (!student) {
+      return res.status(404).json({
+        message: "Student profile not found"
+      });
+    }
+
+    return res.json({
+      student
+    });
+
+  } catch (error) {
+    console.error("Get student profile error:", error);
+    return res.status(500).json({
+      message: "Failed to fetch student profile"
     });
   }
 }

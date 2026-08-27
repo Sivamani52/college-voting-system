@@ -26,20 +26,23 @@ router.post(
 );
 
 
+// Get all elections (Super Admin, Admin, Student)
 router.get(
   "/",
   authenticateToken,
-  authorizeRoles("SUPER_ADMIN"),
+  authorizeRoles("SUPER_ADMIN", "ADMIN", "STUDENT"),
   getAllElections
 );
 
 
+// Get election by ID (Super Admin, Admin, Student)
 router.get(
   "/:id",
   authenticateToken,
-  authorizeRoles("SUPER_ADMIN"),
+  authorizeRoles("SUPER_ADMIN", "ADMIN", "STUDENT"),
   getElectionById
 );
+
 
 
 router.patch(
