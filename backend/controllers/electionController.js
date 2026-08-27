@@ -114,7 +114,6 @@ export async function getElectionById(req, res) {
 
 export async function changeElectionStatus(req, res) {
   try {
-
     const { status } = req.body;
 
     const allowedStatuses = [
@@ -125,9 +124,9 @@ export async function changeElectionStatus(req, res) {
       "RESULT_PUBLISHED"
     ];
 
-    if (!allowedStatuses.includes(status)) {
+    if (!status || !allowedStatuses.includes(status)) {
       return res.status(400).json({
-        message: "Invalid election status"
+        message: "Invalid election status. Allowed: DRAFT, UPCOMING, ACTIVE, CLOSED, RESULT_PUBLISHED"
       });
     }
 
@@ -141,17 +140,41 @@ export async function changeElectionStatus(req, res) {
       });
     }
 
+    if (election.status === status) {
+      return res.json({
+        message: `Election is already in ${status} status`
+      });
+    }
+
+    // Valid state transitions
+    const validTransitions = {
+      DRAFT: ["UPCOMING", "ACTIVE"],
+      UPCOMING: ["DRAFT", "ACTIVE"],
+      ACTIVE: ["CLOSED"],
+      CLOSED: ["RESULT_PUBLISHED"],
+      RESULT_PUBLISHED: []
+    };
+
+    const allowedNext = validTransitions[election.status] || [];
+
+    if (!allowedNext.includes(status)) {
+      return res.status(400).json({
+        message: `Cannot transition election status from ${election.status} to ${status}`
+      });
+    }
+
     await updateElectionStatus(
       req.params.id,
       status
     );
 
     return res.json({
-      message: "Election status updated successfully"
+      message: "Election status updated successfully",
+      previousStatus: election.status,
+      currentStatus: status
     });
 
   } catch (error) {
-
     console.error(
       "Update election status error:",
       error

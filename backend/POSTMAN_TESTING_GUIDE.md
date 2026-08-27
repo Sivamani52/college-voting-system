@@ -942,7 +942,7 @@ npm run dev
 
 #### 15f. View Election Results (Student / Admin / Super Admin)
 * **Method**: `GET`
-* **URL**: `http://localhost:5000/api/votes/results/1`
+* **URL**: `http://localhost:5000/api/votes/results/1` (or `http://localhost:5000/api/results/1`)
 * **Headers**:
   * `Authorization: Bearer <STUDENT_TOKEN>` (or `ADMIN` / `SUPER_ADMIN` token)
 * **Expected Response (`200 OK`)**:
@@ -951,6 +951,7 @@ npm run dev
   "election": {
     "id": 1,
     "title": "College Student Council Election 2026",
+    "description": "Annual student council election",
     "status": "RESULT_PUBLISHED",
     "startDate": "...",
     "endDate": "..."
@@ -965,23 +966,186 @@ npm run dev
     {
       "positionId": 1,
       "positionName": "President",
+      "positionDescription": "Lead the council",
+      "totalVotes": 1,
       "candidates": [
         {
           "candidateId": 1,
+          "studentId": 1,
           "candidateName": "John Doe",
           "studentCode": "21CS001",
+          "manifesto": "Working for students",
           "photoUrl": "https://example.com/photos/john_doe.jpg",
           "candidateStatus": "ACTIVE",
-          "voteCount": 1
+          "voteCount": 1,
+          "percentage": "100.00%"
         }
-      ]
+      ],
+      "winner": {
+        "candidateId": 1,
+        "candidateName": "John Doe",
+        "studentCode": "21CS001",
+        "photoUrl": "https://example.com/photos/john_doe.jpg",
+        "voteCount": 1
+      }
     }
   ]
 }
 ```
 
+---
 
+### Step 16: Backend Security & Error Handling Test Suite
 
+#### 16a. Duplicate Vote Prevention (`409 Conflict`)
+* **Method**: `POST`
+* **URL**: `http://localhost:5000/api/votes`
+* **Headers**: `Authorization: Bearer <STUDENT_TOKEN>`
+* **Body**:
+```json
+{
+  "electionId": 1,
+  "positionId": 1,
+  "candidateId": 1
+}
+```
+* **Expected Response (`409 Conflict`)**:
+```json
+{
+  "message": "You have already voted for this position."
+}
+```
 
+#### 16b. Non-Student Role Attempting to Vote (`403 Forbidden`)
+* **Method**: `POST`
+* **URL**: `http://localhost:5000/api/votes`
+* **Headers**: `Authorization: Bearer <SUPER_ADMIN_TOKEN>` (or `ADMIN` token)
+* **Body**:
+```json
+{
+  "electionId": 1,
+  "positionId": 1,
+  "candidateId": 1
+}
+```
+* **Expected Response (`403 Forbidden`)**:
+```json
+{
+  "message": "Only students can vote."
+}
+```
 
+#### 16c. Ineligible Voter Voting (`403 Forbidden`)
+* **Method**: `POST`
+* **URL**: `http://localhost:5000/api/votes`
+* **Headers**: `Authorization: Bearer <NON_ELIGIBLE_STUDENT_TOKEN>`
+* **Body**:
+```json
+{
+  "electionId": 1,
+  "positionId": 1,
+  "candidateId": 1
+}
+```
+* **Expected Response (`403 Forbidden`)**:
+```json
+{
+  "message": "You are not eligible to vote in this election."
+}
+```
 
+#### 16d. Student Viewing Unpublished Results (`403 Forbidden`)
+* **Condition**: Election status is `ACTIVE` or `CLOSED` (not `RESULT_PUBLISHED`)
+* **Method**: `GET`
+* **URL**: `http://localhost:5000/api/votes/results/1`
+* **Headers**: `Authorization: Bearer <STUDENT_TOKEN>`
+* **Expected Response (`403 Forbidden`)**:
+```json
+{
+  "message": "Results have not been published for this election yet."
+}
+```
+
+#### 16e. Admin Department Scope Restriction (`403 Forbidden`)
+* **Method**: `POST`
+* **URL**: `http://localhost:5000/api/students`
+* **Headers**: `Authorization: Bearer <DEPT_1_ADMIN_TOKEN>`
+* **Body**: Attempting to create a student in Department 2
+```json
+{
+  "studentId": "21EC001",
+  "fullName": "Jane Smith",
+  "email": "jane.ece@college.edu",
+  "departmentId": 2,
+  "yearId": 1,
+  "sectionId": 1
+}
+```
+* **Expected Response (`403 Forbidden`)**:
+```json
+{
+  "message": "Admins can only create students in their assigned department"
+}
+```
+
+#### 16f. Student Attempting to Access Other Student List (`403 Forbidden`)
+* **Method**: `GET`
+* **URL**: `http://localhost:5000/api/students`
+* **Headers**: `Authorization: Bearer <STUDENT_TOKEN>`
+* **Expected Response (`403 Forbidden`)**:
+```json
+{
+  "message": "You do not have permission to access this resource"
+}
+```
+
+#### 16g. Student Viewing Their Own Profile (`200 OK`)
+* **Method**: `GET`
+* **URL**: `http://localhost:5000/api/students/profile`
+* **Headers**: `Authorization: Bearer <STUDENT_TOKEN>`
+* **Expected Response (`200 OK`)**:
+```json
+{
+  "student": {
+    "id": 1,
+    "user_id": 3,
+    "student_id": "21CS001",
+    "full_name": "John Doe",
+    "department_id": 1,
+    "department_name": "Computer Science & Engineering",
+    "year_id": 1,
+    "year_name": "First Year",
+    "section_id": 1,
+    "section_name": "Section A",
+    "status": "ACTIVE"
+  }
+}
+```
+
+#### 16h. Invalid Election Status Transition (`400 Bad Request`)
+* **Method**: `PATCH`
+* **URL**: `http://localhost:5000/api/elections/1/status`
+* **Headers**: `Authorization: Bearer <SUPER_ADMIN_TOKEN>`
+* **Body**: (e.g. attempting to jump from `RESULT_PUBLISHED` back to `ACTIVE` or `DRAFT`)
+```json
+{
+  "status": "ACTIVE"
+}
+```
+* **Expected Response (`400 Bad Request`)**:
+```json
+{
+  "message": "Cannot transition election status from RESULT_PUBLISHED to ACTIVE"
+}
+```
+
+#### 16i. Missing or Invalid JWT Token (`401 Unauthorized`)
+* **Method**: `GET`
+* **URL**: `http://localhost:5000/api/elections`
+* **Headers**: Missing `Authorization` header
+* **Expected Response (`401 Unauthorized`)**:
+```json
+{
+  "message": "Authorization header is required"
+}
+```

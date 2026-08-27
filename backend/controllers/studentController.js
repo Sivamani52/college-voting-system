@@ -13,6 +13,9 @@ import {
   findAllStudents
 } from "../models/studentModel.js";
 
+import {
+  findAdminByUserId
+} from "../models/adminModel.js";
 
 import {
   generateTemporaryPassword
@@ -52,6 +55,36 @@ export async function createStudent(req, res) {
       return res.status(400).json({
         message: "Student ID, name, email, departmentId, yearId and sectionId are required"
       });
+    }
+
+    // -------------------------
+    // 1b. Enforce ADMIN scope
+    // -------------------------
+    if (req.user?.role === "ADMIN") {
+      const admin = await findAdminByUserId(req.user.userId || req.user.id);
+      if (!admin) {
+        return res.status(403).json({
+          message: "Admin profile not found"
+        });
+      }
+
+      if (admin.department_id !== Number(departmentId)) {
+        return res.status(403).json({
+          message: "Admins can only create students in their assigned department"
+        });
+      }
+
+      if (admin.year_id && admin.year_id !== Number(yearId)) {
+        return res.status(403).json({
+          message: "Admins can only create students in their assigned year"
+        });
+      }
+
+      if (admin.section_id && admin.section_id !== Number(sectionId)) {
+        return res.status(403).json({
+          message: "Admins can only create students in their assigned section"
+        });
+      }
     }
 
     // -------------------------
@@ -96,9 +129,9 @@ export async function createStudent(req, res) {
       userId,
       studentId,
       fullName,
-      departmentId,
-      yearId,
-      sectionId,
+      departmentId: Number(departmentId),
+      yearId: Number(yearId),
+      sectionId: Number(sectionId),
       phone: phone || null
     });
 
@@ -114,9 +147,9 @@ export async function createStudent(req, res) {
       extraInfo: {
         userId,
         studentRecordId,
-        departmentId,
-        yearId,
-        sectionId,
+        departmentId: Number(departmentId),
+        yearId: Number(yearId),
+        sectionId: Number(sectionId),
         phone: phone || null
       }
     });
@@ -153,7 +186,17 @@ export async function createStudent(req, res) {
 
 export async function getAllStudentsController(req, res) {
   try {
-    const { departmentId, yearId, sectionId, status } = req.query;
+    let { departmentId, yearId, sectionId, status } = req.query;
+
+    // Enforce ADMIN scoping to their assigned department/year/section
+    if (req.user?.role === "ADMIN") {
+      const admin = await findAdminByUserId(req.user.userId || req.user.id);
+      if (admin) {
+        departmentId = admin.department_id;
+        if (admin.year_id) yearId = admin.year_id;
+        if (admin.section_id) sectionId = admin.section_id;
+      }
+    }
 
     const students = await findAllStudents({
       departmentId: departmentId ? Number(departmentId) : undefined,
@@ -184,6 +227,21 @@ export async function getStudentByIdController(req, res) {
       return res.status(404).json({
         message: "Student not found"
       });
+    }
+
+    // Enforce ADMIN scoping
+    if (req.user?.role === "ADMIN") {
+      const admin = await findAdminByUserId(req.user.userId || req.user.id);
+      if (
+        admin &&
+        (student.department_id !== admin.department_id ||
+          (admin.year_id && student.year_id !== admin.year_id) ||
+          (admin.section_id && student.section_id !== admin.section_id))
+      ) {
+        return res.status(403).json({
+          message: "You do not have permission to view students outside your assigned department"
+        });
+      }
     }
 
     return res.json({

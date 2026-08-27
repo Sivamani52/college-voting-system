@@ -13,8 +13,13 @@ import {
 } from "../models/electionModel.js";
 
 import {
-  findStudentByUserId
+  findStudentByUserId,
+  findStudentById
 } from "../models/studentModel.js";
+
+import {
+  findAdminByUserId
+} from "../models/adminModel.js";
 
 import pool from "../config/db.js";
 
@@ -77,6 +82,21 @@ export async function addEligibleVoterController(
 
     const studentRecord = students[0];
 
+    // Enforce ADMIN department/year/section scope
+    if (req.user?.role === "ADMIN") {
+      const admin = await findAdminByUserId(req.user.userId || req.user.id);
+      if (
+        admin &&
+        (studentRecord.department_id !== admin.department_id ||
+          (admin.year_id && studentRecord.year_id !== admin.year_id) ||
+          (admin.section_id && studentRecord.section_id !== admin.section_id))
+      ) {
+        return res.status(403).json({
+          message: "Admins can only add eligible voters from their assigned department"
+        });
+      }
+    }
+
     // Check duplicate
     const existing =
       await findEligibleVoter({
@@ -122,7 +142,7 @@ export async function addBulkEligibleVotersController(
   res
 ) {
   try {
-    const {
+    let {
       electionId,
       departmentId,
       yearId,
@@ -153,16 +173,29 @@ export async function addBulkEligibleVotersController(
       });
     }
 
+    // Enforce ADMIN scoping
+    if (req.user?.role === "ADMIN") {
+      const admin = await findAdminByUserId(req.user.userId || req.user.id);
+      if (admin) {
+        departmentId = admin.department_id;
+        if (admin.year_id) yearId = admin.year_id;
+        if (admin.section_id) sectionId = admin.section_id;
+      }
+    }
+
     let targetStudentIds = [];
 
     // Option A: Explicit array of student IDs / codes
     if (Array.isArray(studentIds) && studentIds.length > 0) {
-      const [students] = await pool.query(
-        `SELECT id FROM students
-         WHERE (id IN (?) OR student_id IN (?))
-         AND status = 'ACTIVE'`,
-        [studentIds, studentIds]
-      );
+      let query = `SELECT id FROM students WHERE (id IN (?) OR student_id IN (?)) AND status = 'ACTIVE'`;
+      const queryParams = [studentIds, studentIds];
+
+      if (req.user?.role === "ADMIN" && departmentId) {
+        query += ` AND department_id = ?`;
+        queryParams.push(departmentId);
+      }
+
+      const [students] = await pool.query(query, queryParams);
       targetStudentIds = students.map(s => s.id);
     } 
     // Option B: Query active students by department / year / section
@@ -331,6 +364,23 @@ export async function removeEligibleVoterController(
       });
     }
 
+    // Enforce ADMIN department scoping
+    if (req.user?.role === "ADMIN") {
+      const admin = await findAdminByUserId(req.user.userId || req.user.id);
+      const student = await findStudentById(voter.student_id);
+      if (
+        admin &&
+        student &&
+        (student.department_id !== admin.department_id ||
+          (admin.year_id && student.year_id !== admin.year_id) ||
+          (admin.section_id && student.section_id !== admin.section_id))
+      ) {
+        return res.status(403).json({
+          message: "You do not have permission to remove eligible voters outside your assigned department"
+        });
+      }
+    }
+
     const election = await findElectionById(voter.election_id);
 
     if (
@@ -372,6 +422,13 @@ export async function removeAllEligibleVotersController(
 ) {
   try {
     const { electionId } = req.params;
+
+    // Only SUPER_ADMIN can clear all voters for an election
+    if (req.user?.role !== "SUPER_ADMIN") {
+      return res.status(403).json({
+        message: "Only Super Admin can clear all eligible voters for an election"
+      });
+    }
 
     const election = await findElectionById(electionId);
     if (!election) {

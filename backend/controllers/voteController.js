@@ -210,6 +210,13 @@ export async function castVote(req, res) {
 
     console.error('Cast vote error:', error)
 
+    // Handle DB UNIQUE constraint error for concurrent requests
+    if (error.code === 'ER_DUP_ENTRY' || error.errno === 1062) {
+      return res.status(409).json({
+        message: 'You have already voted for this position.'
+      })
+    }
+
     return res.status(500).json({
       message: 'Failed to cast vote.',
       error: error.message
