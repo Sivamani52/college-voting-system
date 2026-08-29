@@ -52,9 +52,9 @@ export async function findStudentById(id) {
     `SELECT s.*, u.email, u.role, u.status AS user_status
      FROM students s
      JOIN users u ON s.user_id = u.id
-     WHERE s.id = ?
+     WHERE (s.id = ? OR s.student_id = ?)
      LIMIT 1`,
-    [id]
+    [id, id]
   );
 
   return rows[0];

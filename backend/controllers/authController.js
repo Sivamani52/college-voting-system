@@ -4,26 +4,39 @@ import jwt from "jsonwebtoken";
 
 import {
   findUserByEmail,
+  findUserById,
   createUser
 } from "../models/userModel.js";
+import { findStudentByStudentId } from "../models/studentModel.js";
 import { generateOTP } from "../utils/otp.js";
 import { sendOTPEmail } from "../services/emailService.js";
 
 export async function login(req, res) {
   try {
-    const { email, password } = req.body;
+    const rawIdentifier = req.body.email || req.body.identifier || "";
+    const identifier = typeof rawIdentifier === "string" ? rawIdentifier.trim() : "";
+    const password = req.body.password;
 
-    if (!email || !password) {
+    if (!identifier || !password) {
       return res.status(400).json({
-        message: "Email and password are required"
+        message: "Email/Student ID and password are required"
       });
     }
 
-    const user = await findUserByEmail(email);
+    // 1. Try finding by email first
+    let user = await findUserByEmail(identifier);
+
+    // 2. If not found by email, try finding by Student ID (in students table)
+    if (!user) {
+      const student = await findStudentByStudentId(identifier);
+      if (student && student.user_id) {
+        user = await findUserById(student.user_id);
+      }
+    }
 
     if (!user) {
       return res.status(401).json({
-        message: "Invalid email or password"
+        message: "Invalid email/Student ID or password"
       });
     }
 
@@ -40,7 +53,7 @@ export async function login(req, res) {
 
     if (!passwordMatch) {
       return res.status(401).json({
-        message: "Invalid email or password"
+        message: "Invalid email/Student ID or password"
       });
     }
 
@@ -176,7 +189,7 @@ export async function verifyForgotPasswordOTP(req, res) {
        WHERE user_id = ?
        AND purpose = 'FORGOT_PASSWORD'
        AND verified = FALSE
-       ORDER BY created_at DESC
+       ORDER BY id DESC
        LIMIT 1`,
       [user.id]
     );
@@ -206,7 +219,7 @@ export async function verifyForgotPasswordOTP(req, res) {
       `UPDATE otp_verifications
        SET verified = TRUE
        WHERE id = ?`,
-      [otpRecord.id]
+       [otpRecord.id]
     );
 
     res.json({
@@ -244,7 +257,8 @@ export async function resetPassword(req, res) {
 
     const [result] = await pool.query(
       `UPDATE users
-       SET password_hash = ?
+       SET password_hash = ?,
+           must_change_password = FALSE
        WHERE id = ?`,
       [passwordHash, userId]
     );

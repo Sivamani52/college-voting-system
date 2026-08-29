@@ -90,7 +90,10 @@ export async function createStudent(req, res) {
     // -------------------------
     // 2. Check email uniqueness
     // -------------------------
-    const existingUser = await findUserByEmail(email);
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanStudentId = studentId.trim();
+
+    const existingUser = await findUserByEmail(cleanEmail);
     if (existingUser) {
       return res.status(409).json({
         message: "A user with this email already exists"
@@ -100,7 +103,7 @@ export async function createStudent(req, res) {
     // -------------------------
     // 3. Check student ID uniqueness
     // -------------------------
-    const existingStudent = await findStudentByStudentId(studentId);
+    const existingStudent = await findStudentByStudentId(cleanStudentId);
     if (existingStudent) {
       return res.status(409).json({
         message: "A student with this Student ID already exists"
@@ -120,19 +123,19 @@ export async function createStudent(req, res) {
     // -------------------------
     // 6. Create user (with mustChangePassword = true)
     // -------------------------
-    const userId = await createUser(email, passwordHash, "STUDENT", true);
+    const userId = await createUser(cleanEmail, passwordHash, "STUDENT", true);
 
     // -------------------------
     // 7. Create student profile
     // -------------------------
     const studentRecordId = await createStudentRecord({
       userId,
-      studentId,
-      fullName,
+      studentId: cleanStudentId,
+      fullName: fullName.trim(),
       departmentId: Number(departmentId),
       yearId: Number(yearId),
       sectionId: Number(sectionId),
-      phone: phone || null
+      phone: phone ? phone.trim() : null
     });
 
     // -------------------------

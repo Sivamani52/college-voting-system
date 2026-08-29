@@ -40,8 +40,11 @@ export async function createAdmin(req, res) {
       });
     }
 
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanName = name.trim();
+
     // Check if user already exists
-    const existingUser = await findUserByEmail(email);
+    const existingUser = await findUserByEmail(cleanEmail);
     if (existingUser) {
       return res.status(400).json({
         message: "A user with this email already exists"
@@ -55,12 +58,12 @@ export async function createAdmin(req, res) {
     const passwordHash = await bcrypt.hash(temporaryPassword, 10);
 
     // Create user in users table
-    const userId = await createUser(email, passwordHash, "ADMIN", true);
+    const userId = await createUser(cleanEmail, passwordHash, "ADMIN", true);
 
     // Create admin profile in admins table
     const adminId = await createAdminRecord({
       userId,
-      fullName: name,
+      fullName: cleanName,
       departmentId,
       yearId: yearId || null,
       sectionId: sectionId || null
@@ -129,6 +132,18 @@ export async function getAdminProfileController(req, res) {
 
     const admin = await findAdminByUserId(userId);
     if (!admin) {
+      if (req.user?.role === "SUPER_ADMIN") {
+        return res.json({
+          admin: {
+            user_id: userId,
+            full_name: "Super Admin",
+            email: req.user.email,
+            role: "SUPER_ADMIN",
+            user_status: "ACTIVE"
+          }
+        });
+      }
+
       return res.status(404).json({
         message: "Admin profile not found"
       });
