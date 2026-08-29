@@ -2,7 +2,7 @@ import { createContext, useState } from "react";
 import api from "../services/api";
 import { useAuth } from "./useAuth";
 
-export const AuthContext = createContext();
+export const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
@@ -18,11 +18,11 @@ export function AuthProvider({ children }) {
   });
   const [loading, setLoading] = useState(false);
 
-  const login = async (email, password) => {
+  const login = async (identifier, password) => {
     setLoading(true);
     try {
       const response = await api.post("/auth/login", {
-        email,
+        identifier,
         password,
       });
 

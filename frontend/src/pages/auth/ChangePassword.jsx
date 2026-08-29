@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../services/api";
+import AuthLayout from "../../components/auth/AuthLayout";
+import Alert from "../../components/common/Alert";
 
 export default function ChangePassword() {
   const navigate = useNavigate();
@@ -55,7 +57,7 @@ export default function ChangePassword() {
         newPassword,
       });
 
-      setMessage(response.data.message || "Password changed successfully! Please log in with your new password.");
+      setMessage(response.data.message || "Password changed successfully! Redirecting to login...");
 
       if (user) {
         logout();
@@ -75,109 +77,100 @@ export default function ChangePassword() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">
-            Change Password
-          </h1>
-          <p className="text-gray-500 mt-1 text-sm">
-            Update your temporary or current password
-          </p>
+    <AuthLayout
+      title="Change Password"
+      subtitle="Update your temporary or current password"
+      footer={
+        <button
+          type="button"
+          onClick={() => navigate("/login")}
+          className="text-xs font-semibold text-blue-600 hover:underline"
+        >
+          &larr; Back to Sign In
+        </button>
+      }
+    >
+      {error && (
+        <div className="mb-4">
+          <Alert type="error" message={error} onDismiss={() => setError("")} />
         </div>
+      )}
 
-        {error && (
-          <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600">
-            {error}
+      {message && (
+        <div className="mb-4">
+          <Alert type="success" message={message} />
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {!stateUserId && (
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5 text-gray-700">
+              User ID #
+            </label>
+            <input
+              type="number"
+              value={userIdInput}
+              onChange={(e) => setUserIdInput(e.target.value)}
+              placeholder="Enter your user ID"
+              required
+              className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition"
+            />
           </div>
         )}
 
-        {message && (
-          <div className="mb-4 rounded-lg bg-green-50 border border-green-200 p-3 text-sm text-green-700">
-            {message}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {!stateUserId && (
-            <div>
-              <label className="block text-sm font-medium mb-1 text-gray-700">
-                User ID #
-              </label>
-              <input
-                type="number"
-                value={userIdInput}
-                onChange={(e) => setUserIdInput(e.target.value)}
-                placeholder="Enter your user ID"
-                required
-                className="w-full rounded-lg border border-gray-300 px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium mb-1 text-gray-700">
-              Current / Temporary Password
-            </label>
-            <input
-              type="password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              placeholder="Enter current password"
-              required
-              className="w-full rounded-lg border border-gray-300 px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1 text-gray-700">
-              New Password
-            </label>
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Minimum 8 characters"
-              required
-              minLength={8}
-              className="w-full rounded-lg border border-gray-300 px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1 text-gray-700">
-              Confirm New Password
-            </label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Re-enter new password"
-              required
-              minLength={8}
-              className="w-full rounded-lg border border-gray-300 px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg bg-blue-600 py-2.5 font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
-          >
-            {loading ? "Updating Password..." : "Change Password"}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center">
-          <button
-            type="button"
-            onClick={() => navigate("/login")}
-            className="text-sm text-blue-600 hover:underline"
-          >
-            &larr; Back to Sign In
-          </button>
+        <div>
+          <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5 text-gray-700">
+            Current / Temporary Password
+          </label>
+          <input
+            type="password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            placeholder="Enter current password"
+            required
+            className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition"
+          />
         </div>
-      </div>
-    </div>
+
+        <div>
+          <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5 text-gray-700">
+            New Password
+          </label>
+          <input
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder="Minimum 8 characters"
+            required
+            minLength={8}
+            className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5 text-gray-700">
+            Confirm New Password
+          </label>
+          <input
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="Re-enter new password"
+            required
+            minLength={8}
+            className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition"
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full rounded-xl bg-blue-600 py-3 font-semibold text-sm text-white hover:bg-blue-700 disabled:opacity-50 transition shadow-xs"
+        >
+          {loading ? "Updating Password..." : "Change Password"}
+        </button>
+      </form>
+    </AuthLayout>
   );
 }

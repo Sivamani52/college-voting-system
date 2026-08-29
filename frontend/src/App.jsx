@@ -23,6 +23,8 @@ import StudentDashboard
 import ProtectedRoute
   from "./routes/ProtectedRoute";
 
+import ElectionDetails from "./pages/student/ElectionDetails";
+
 
 function Unauthorized() {
   return (
@@ -69,6 +71,7 @@ export default function App() {
             }
           />
 
+
           {/* Admin */}
           <Route
             path="/admin"
@@ -89,6 +92,17 @@ export default function App() {
                 allowedRoles={["STUDENT"]}
               >
                 <StudentDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/student/elections/:id"
+            element={
+              <ProtectedRoute
+                allowedRoles={["STUDENT"]}
+              >
+                <ElectionDetails />
               </ProtectedRoute>
             }
           />
