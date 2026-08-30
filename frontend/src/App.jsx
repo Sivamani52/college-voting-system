@@ -24,6 +24,7 @@ import ProtectedRoute
   from "./routes/ProtectedRoute";
 
 import ElectionDetails from "./pages/student/ElectionDetails";
+import ConfirmVote from "./pages/student/ConfirmVote";
 
 
 function Unauthorized() {
@@ -103,6 +104,28 @@ export default function App() {
                 allowedRoles={["STUDENT"]}
               >
                 <ElectionDetails />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/student/confirm-vote"
+            element={
+              <ProtectedRoute
+                allowedRoles={["STUDENT"]}
+              >
+                <ConfirmVote />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/student/elections/:id/confirm"
+            element={
+              <ProtectedRoute
+                allowedRoles={["STUDENT"]}
+              >
+                <ConfirmVote />
               </ProtectedRoute>
             }
           />
