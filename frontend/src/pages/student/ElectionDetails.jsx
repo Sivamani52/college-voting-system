@@ -46,7 +46,6 @@ export default function ElectionDetails() {
 
   const loadElectionData = useCallback(async () => {
     try {
-      setLoading(true);
       setError("");
 
       const electionRes = await getElectionById(id);

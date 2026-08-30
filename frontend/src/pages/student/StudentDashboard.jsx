@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Vote, Clock, CheckCircle, User } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/useAuth";
 import {
   getMyProfile,
   getMyElections,
@@ -23,7 +23,6 @@ export default function StudentDashboard() {
 
   const loadDashboard = async () => {
     try {
-      setLoading(true);
       setError("");
 
       const [profileData, electionData] = await Promise.all([

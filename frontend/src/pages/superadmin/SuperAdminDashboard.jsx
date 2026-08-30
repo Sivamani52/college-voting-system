@@ -1,4 +1,4 @@
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/useAuth";
 import Navbar from "../../components/common/Navbar";
 
 export default function SuperAdminDashboard() {
