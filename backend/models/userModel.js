@@ -1,9 +1,21 @@
 import pool from "../config/db.js";
 
 export async function findUserByEmail(email) {
+  if (!email) return null;
+  const cleanEmail = email.trim().toLowerCase();
   const [rows] = await pool.query(
-    "SELECT * FROM users WHERE email = ? LIMIT 1",
-    [email]
+    "SELECT * FROM users WHERE LOWER(email) = ? LIMIT 1",
+    [cleanEmail]
+  );
+
+  return rows[0];
+}
+
+export async function findUserById(userId) {
+  if (!userId) return null;
+  const [rows] = await pool.query(
+    "SELECT * FROM users WHERE id = ? LIMIT 1",
+    [userId]
   );
 
   return rows[0];

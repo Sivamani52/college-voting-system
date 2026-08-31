@@ -4,7 +4,10 @@ import {
   findUserByEmail
 } from "../models/userModel.js";
 import {
-  createAdminRecord
+  createAdminRecord,
+  findAllAdmins,
+  findAdminById,
+  findAdminByUserId
 } from "../models/adminModel.js";
 import {
   generateTemporaryPassword
@@ -37,8 +40,11 @@ export async function createAdmin(req, res) {
       });
     }
 
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanName = name.trim();
+
     // Check if user already exists
-    const existingUser = await findUserByEmail(email);
+    const existingUser = await findUserByEmail(cleanEmail);
     if (existingUser) {
       return res.status(400).json({
         message: "A user with this email already exists"
@@ -52,12 +58,12 @@ export async function createAdmin(req, res) {
     const passwordHash = await bcrypt.hash(temporaryPassword, 10);
 
     // Create user in users table
-    const userId = await createUser(email, passwordHash, "ADMIN", true);
+    const userId = await createUser(cleanEmail, passwordHash, "ADMIN", true);
 
     // Create admin profile in admins table
     const adminId = await createAdminRecord({
       userId,
-      fullName: name,
+      fullName: cleanName,
       departmentId,
       yearId: yearId || null,
       sectionId: sectionId || null
@@ -101,6 +107,55 @@ export async function createAdmin(req, res) {
 
     res.status(500).json({
       message: error.message || "Failed to create admin"
+    });
+  }
+}
+
+export async function getAllAdminsController(req, res) {
+  try {
+    const admins = await findAllAdmins();
+
+    return res.json({
+      admins
+    });
+  } catch (error) {
+    console.error("Get all admins error:", error);
+    return res.status(500).json({
+      message: "Failed to fetch admins"
+    });
+  }
+}
+
+export async function getAdminProfileController(req, res) {
+  try {
+    const userId = req.user?.userId || req.user?.id;
+
+    const admin = await findAdminByUserId(userId);
+    if (!admin) {
+      if (req.user?.role === "SUPER_ADMIN") {
+        return res.json({
+          admin: {
+            user_id: userId,
+            full_name: "Super Admin",
+            email: req.user.email,
+            role: "SUPER_ADMIN",
+            user_status: "ACTIVE"
+          }
+        });
+      }
+
+      return res.status(404).json({
+        message: "Admin profile not found"
+      });
+    }
+
+    return res.json({
+      admin
+    });
+  } catch (error) {
+    console.error("Get admin profile error:", error);
+    return res.status(500).json({
+      message: "Failed to fetch admin profile"
     });
   }
 }

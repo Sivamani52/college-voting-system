@@ -1,7 +1,9 @@
 import express from "express";
 
 import {
-  createAdmin
+  createAdmin,
+  getAllAdminsController,
+  getAdminProfileController
 } from "../controllers/adminController.js";
 
 import {
@@ -14,6 +16,7 @@ import {
 
 const router = express.Router();
 
+// Create new admin (Super Admin only)
 router.post(
   "/",
   authenticateToken,
@@ -21,4 +24,20 @@ router.post(
   createAdmin
 );
 
-export default router;
+// Get current admin profile (Admin, Super Admin)
+router.get(
+  "/profile",
+  authenticateToken,
+  authorizeRoles("ADMIN", "SUPER_ADMIN"),
+  getAdminProfileController
+);
+
+// Get all admins (Super Admin only)
+router.get(
+  "/",
+  authenticateToken,
+  authorizeRoles("SUPER_ADMIN"),
+  getAllAdminsController
+);
+
+export default router;

@@ -1,10 +1,14 @@
 import { syncExistingUsersToFile } from "./utils/credentialLogger.js";
 
-async function run() {
-  console.log("Starting credentials sync from database...");
-  await syncExistingUsersToFile();
-  console.log("Credentials sync completed!");
-  process.exit(0);
+async function main() {
+  try {
+    await syncExistingUsersToFile();
+    console.log("Credentials sync completed successfully.");
+    process.exit(0);
+  } catch (error) {
+    console.error("Failed to sync credentials:", error);
+    process.exit(1);
+  }
 }
 
-run();
+main();
