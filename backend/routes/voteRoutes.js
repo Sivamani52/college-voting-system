@@ -1,6 +1,6 @@
 import express from 'express'
 import {
-  castVote,
+  submitVotes,
   getMyVotesController,
   getElectionResultsController,
   getElectionStatsController
@@ -10,15 +10,19 @@ import { authorizeRoles } from '../middleware/roleMiddleware.js'
 
 const router = express.Router()
 
-// Student casts a vote
+// ==========================================
+// STUDENT SUBMITS ALL VOTES IN A TRANSACTION
+// ==========================================
 router.post(
   '/',
   authenticateToken,
   authorizeRoles('STUDENT'),
-  castVote
+  submitVotes
 )
 
-// Student checks their votes in an election
+// ==========================================
+// STUDENT CHECKS THEIR VOTES IN AN ELECTION
+// ==========================================
 router.get(
   '/my-votes/:electionId',
   authenticateToken,
@@ -26,7 +30,9 @@ router.get(
   getMyVotesController
 )
 
-// View election results (Admins always, Students once published)
+// ==========================================
+// VIEW ELECTION RESULTS
+// ==========================================
 router.get(
   '/results/:electionId',
   authenticateToken,
@@ -34,7 +40,9 @@ router.get(
   getElectionResultsController
 )
 
-// View turnout statistics (Super Admin, Admin)
+// ==========================================
+// VIEW TURNOUT STATISTICS
+// ==========================================
 router.get(
   '/stats/:electionId',
   authenticateToken,
@@ -42,4 +50,4 @@ router.get(
   getElectionStatsController
 )
 
-export default router
+export default router

@@ -1,4 +1,5 @@
 import api from "./api";
+import { submitVotes as submitVotesApi, getMyVotes as getMyVotesApi, getElectionResults as getElectionResultsApi } from "./voteService";
 
 // Get logged-in student's profile
 export const getMyProfile = async () => {
@@ -37,23 +38,26 @@ export const getCandidatesByElection = async (electionId) => {
 };
 
 // Get my cast votes for an election
-export const getMyVotes = async (electionId) => {
-  const response = await api.get(`/votes/my-votes/${electionId}`);
-  return response.data;
-};
+export const getMyVotes = getMyVotesApi;
 
-// Cast a vote
-export const castVote = async ({ electionId, positionId, candidateId }) => {
-  const response = await api.post("/votes", {
-    electionId: Number(electionId),
-    positionId: Number(positionId),
-    candidateId: Number(candidateId),
+// Submit votes using transaction-based batch API
+export const submitVotes = submitVotesApi;
+
+// Cast vote (supports both batch format { election_id, votes } and single { electionId, positionId, candidateId })
+export const castVote = async (data) => {
+  if (data.votes && Array.isArray(data.votes)) {
+    return submitVotesApi(data);
+  }
+  return submitVotesApi({
+    election_id: data.electionId || data.election_id,
+    votes: [
+      {
+        position_id: data.positionId || data.position_id,
+        candidate_id: data.candidateId || data.candidate_id,
+      },
+    ],
   });
-  return response.data;
 };
 
 // Get election results (when published)
-export const getElectionResults = async (electionId) => {
-  const response = await api.get(`/votes/results/${electionId}`);
-  return response.data;
-};
+export const getElectionResults = getElectionResultsApi;

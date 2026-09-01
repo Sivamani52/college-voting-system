@@ -9,6 +9,7 @@ import {
   AlertCircle,
   ShieldCheck,
   AlertTriangle,
+  ArrowRight,
 } from "lucide-react";
 import {
   getElectionById,
@@ -16,12 +17,10 @@ import {
   getPositionsByElection,
   getCandidatesByElection,
   getMyVotes,
-  castVote,
   getElectionResults,
 } from "../../services/studentService";
 import Navbar from "../../components/common/Navbar";
 import Alert from "../../components/common/Alert";
-import Modal from "../../components/common/Modal";
 import EmptyState from "../../components/common/EmptyState";
 import { ElectionStatusBadge } from "../../components/student/ElectionCard";
 import CandidateCard from "../../components/student/CandidateCard";
@@ -38,11 +37,12 @@ export default function ElectionDetails() {
   const [myVotes, setMyVotes] = useState([]);
   const [results, setResults] = useState(null);
 
+  // Selected candidate ID per position: { [positionId]: candidateId }
+  const [selectedCandidates, setSelectedCandidates] = useState({});
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [votingLoading, setVotingLoading] = useState({});
   const [feedback, setFeedback] = useState({ type: "", message: "" });
-  const [confirmModal, setConfirmModal] = useState(null); // { position, candidate }
 
   const loadElectionData = useCallback(async () => {
     try {
@@ -94,37 +94,6 @@ export default function ElectionDetails() {
     loadElectionData();
   }, [loadElectionData]);
 
-  const handleCastVote = async (position, candidate) => {
-    setConfirmModal(null);
-    setFeedback({ type: "", message: "" });
-    setVotingLoading((prev) => ({ ...prev, [position.id]: true }));
-
-    try {
-      await castVote({
-        electionId: Number(id),
-        positionId: position.id,
-        candidateId: candidate.id,
-      });
-
-      setFeedback({
-        type: "success",
-        message: `Successfully voted for ${candidate.full_name || candidate.name || "candidate"} for ${position.title}!`,
-      });
-
-      // Refresh votes list
-      const updatedVotes = await getMyVotes(id);
-      setMyVotes(updatedVotes.votes || updatedVotes.data || updatedVotes || []);
-    } catch (err) {
-      console.error("Vote casting error:", err);
-      setFeedback({
-        type: "error",
-        message: err.response?.data?.message || "Failed to cast vote. Please try again.",
-      });
-    } finally {
-      setVotingLoading((prev) => ({ ...prev, [position.id]: false }));
-    }
-  };
-
   const hasVotedForPosition = (positionId) => {
     return myVotes.some(
       (v) => Number(v.position_id || v.positionId) === Number(positionId)
@@ -136,6 +105,43 @@ export default function ElectionDetails() {
       (v) => Number(v.position_id || v.positionId) === Number(positionId)
     );
     return vote ? Number(vote.candidate_id || vote.candidateId) : null;
+  };
+
+  // Select / deselect candidate for a position
+  const handleSelectCandidate = (position, candidate) => {
+    setSelectedCandidates((prev) => {
+      const current = prev[position.id];
+      if (current === candidate.id) {
+        const copy = { ...prev };
+        delete copy[position.id];
+        return copy;
+      }
+      return {
+        ...prev,
+        [position.id]: candidate.id,
+      };
+    });
+  };
+
+  // Proceed to review and confirm votes
+  const handleProceedToReview = () => {
+    const count = Object.keys(selectedCandidates).length;
+    if (count === 0) {
+      setFeedback({
+        type: "warning",
+        message: "Please select at least one candidate before proceeding to review your ballot.",
+      });
+      return;
+    }
+
+    navigate("/student/confirm-vote", {
+      state: {
+        election,
+        positions,
+        candidates,
+        selectedCandidates,
+      },
+    });
   };
 
   if (loading) {
@@ -171,9 +177,12 @@ export default function ElectionDetails() {
 
   const isEligible = eligibility?.isEligible ?? true;
   const isElectionActive = election.status === "ACTIVE";
+  const selectedCount = Object.keys(selectedCandidates).length;
+  const unvotedPositionsCount = positions.filter((p) => !hasVotedForPosition(p.id)).length;
+  const isAllVoted = positions.length > 0 && unvotedPositionsCount === 0;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-16">
+    <div className="min-h-screen bg-gray-50 pb-28">
       {/* Navbar */}
       <Navbar subtitle="Election Center" />
 
@@ -199,20 +208,23 @@ export default function ElectionDetails() {
         )}
 
         {/* Election Overview Hero */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 shadow-xs">
+        <div className="bg-white rounded-3xl border border-gray-200 p-6 sm:p-8 shadow-xs">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-6">
             <div>
               <div className="flex items-center gap-3 flex-wrap mb-2">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
                   {election.title}
                 </h1>
-                <ElectionStatusBadge status={election.status} />
+                <ElectionStatusBadge
+                  status={election.status}
+                  hasVoted={isAllVoted || myVotes.length > 0}
+                />
               </div>
               <p className="text-gray-600 text-sm max-w-2xl">
                 {election.description || "Official college election."}
               </p>
             </div>
-            <div className="flex flex-col gap-1 text-xs text-gray-500 shrink-0 bg-gray-50 p-3 rounded-xl border border-gray-100">
+            <div className="flex flex-col gap-1 text-xs text-gray-500 shrink-0 bg-gray-50 p-3 rounded-2xl border border-gray-100">
               {election.start_date && (
                 <div className="flex items-center gap-2">
                   <Calendar size={14} className="text-blue-600" />
@@ -235,14 +247,25 @@ export default function ElectionDetails() {
           {/* Eligibility Banner */}
           <div className="mt-6">
             {isEligible ? (
-              <div className="flex items-center gap-3 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm">
-                <ShieldCheck size={18} className="text-emerald-600 shrink-0" />
-                <div>
-                  <span className="font-semibold">Eligible to Vote:</span> You are registered on the eligible voter roster for this election.
+              <div className="flex items-center justify-between flex-wrap gap-3 p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm">
+                <div className="flex items-center gap-3">
+                  <ShieldCheck size={18} className="text-emerald-600 shrink-0" />
+                  <div>
+                    <span className="font-semibold">Eligible Voter:</span> You are registered on the official voter roster for this election.
+                  </div>
                 </div>
+                {isAllVoted ? (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800">
+                    <CheckCircle2 size={14} /> All Positions Voted
+                  </span>
+                ) : myVotes.length > 0 ? (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                    <CheckCircle2 size={14} /> {myVotes.length} of {positions.length} Positions Voted
+                  </span>
+                ) : null}
               </div>
             ) : (
-              <div className="flex items-center gap-3 p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+              <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-sm">
                 <AlertTriangle size={18} className="text-amber-600 shrink-0" />
                 <div>
                   <span className="font-semibold">Not on Eligibility Roster:</span> {eligibility?.message || "You are not listed as an eligible voter for this election."}
@@ -254,19 +277,19 @@ export default function ElectionDetails() {
 
         {/* Results View if Published */}
         {election.status === "RESULT_PUBLISHED" && results && (
-          <ElectionResultsView results={results} />
+          <ElectionResultsView results={results} electionId={id} />
         )}
 
         {/* Positions & Candidates List */}
         <div className="space-y-8">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <h2 className="text-xl font-extrabold text-gray-900 flex items-center gap-2">
               <Vote size={22} className="text-blue-600" />
               Positions & Candidates ({positions.length})
             </h2>
             {isElectionActive && (
               <span className="text-xs text-gray-500 font-medium">
-                {myVotes.length} of {positions.length} votes cast
+                {myVotes.length} of {positions.length} votes recorded
               </span>
             )}
           </div>
@@ -283,15 +306,16 @@ export default function ElectionDetails() {
               );
               const voted = hasVotedForPosition(pos.id);
               const votedCandidateId = getVotedCandidateId(pos.id);
+              const selectedBatchCandId = selectedCandidates[pos.id];
 
               return (
                 <div
                   key={pos.id}
-                  className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-xs"
+                  className="bg-white rounded-3xl border border-gray-200 overflow-hidden shadow-xs"
                 >
                   <div className="bg-gray-50/80 px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
-                      <h3 className="text-lg font-bold text-gray-900">{pos.title}</h3>
+                      <h3 className="text-lg font-bold text-gray-900">{pos.title || pos.name}</h3>
                       {pos.description && (
                         <p className="text-xs text-gray-500 mt-0.5">{pos.description}</p>
                       )}
@@ -301,9 +325,13 @@ export default function ElectionDetails() {
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
                           <CheckCircle2 size={14} /> Vote Cast
                         </span>
+                      ) : selectedBatchCandId ? (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
+                          Choice Selected
+                        </span>
                       ) : isElectionActive && isEligible ? (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                          Vote Pending
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                          Selection Pending
                         </span>
                       ) : (
                         <span className="text-xs text-gray-400">Voting Unavailable</span>
@@ -323,13 +351,11 @@ export default function ElectionDetails() {
                             candidate={cand}
                             position={pos}
                             isSelectedByVote={votedCandidateId === Number(cand.id)}
+                            isSelectedForBatch={selectedBatchCandId === Number(cand.id)}
                             hasVotedForPosition={voted}
                             isElectionActive={isElectionActive}
                             isEligible={isEligible}
-                            isVoting={votingLoading[pos.id]}
-                            onVoteClick={(position, candidate) =>
-                              setConfirmModal({ position, candidate })
-                            }
+                            onSelectCandidate={handleSelectCandidate}
                           />
                         ))}
                       </div>
@@ -342,33 +368,30 @@ export default function ElectionDetails() {
         </div>
       </main>
 
-      {/* Confirmation Modal */}
-      <Modal
-        isOpen={!!confirmModal}
-        onClose={() => setConfirmModal(null)}
-        title="Confirm Your Vote"
-        icon={<Vote size={24} />}
-        confirmText="Confirm Vote"
-        cancelText="Cancel"
-        onConfirm={() =>
-          confirmModal &&
-          handleCastVote(confirmModal.position, confirmModal.candidate)
-        }
-      >
-        {confirmModal && (
-          <p>
-            Are you sure you want to vote for{" "}
-            <span className="font-bold text-gray-900">
-              {confirmModal.candidate.full_name || confirmModal.candidate.name}
-            </span>{" "}
-            for the position of{" "}
-            <span className="font-bold text-gray-900">
-              {confirmModal.position.title}
-            </span>
-            ? Once submitted, your vote cannot be changed.
-          </p>
-        )}
-      </Modal>
+      {/* Floating Review & Submit Action Bar for Active Election */}
+      {isElectionActive && isEligible && unvotedPositionsCount > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 py-4 px-4 sm:px-8 shadow-lg">
+          <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-center sm:text-left">
+              <p className="text-sm font-bold text-gray-900">
+                {selectedCount} candidate{selectedCount === 1 ? "" : "s"} selected
+              </p>
+              <p className="text-xs text-gray-500">
+                Review your selections before final transaction submission.
+              </p>
+            </div>
+
+            <button
+              onClick={handleProceedToReview}
+              disabled={selectedCount === 0}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span>Review & Submit Vote ({selectedCount})</span>
+              <ArrowRight size={18} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

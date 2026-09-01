@@ -15,12 +15,28 @@ export async function hasVoted(electionId, positionId, studentId, connection = p
   return rows.length > 0
 }
 
+// Check which positions a student has already voted for in an election
+export async function getVotedPositionIds(electionId, studentId, connection = pool) {
+  const [rows] = await connection.query(
+    `SELECT position_id
+     FROM votes
+     WHERE election_id = ?
+       AND student_id = ?`,
+    [electionId, studentId]
+  )
+
+  return rows.map((r) => r.position_id)
+}
+
 // Get all votes cast by a specific student in an election
-export async function getStudentVotesInElection(electionId, studentId) {
-  const [rows] = await pool.query(
+export async function getStudentVotesInElection(electionId, studentId, connection = pool) {
+  const [rows] = await connection.query(
     `SELECT 
+       v.id,
+       v.election_id,
        v.position_id,
        v.candidate_id,
+       v.student_id,
        v.voted_at,
        p.name AS position_name,
        s.full_name AS candidate_name
@@ -29,7 +45,8 @@ export async function getStudentVotesInElection(electionId, studentId) {
      JOIN candidates c ON v.candidate_id = c.id
      JOIN students s ON c.student_id = s.id
      WHERE v.election_id = ?
-       AND v.student_id = ?`,
+       AND v.student_id = ?
+     ORDER BY v.voted_at ASC`,
     [electionId, studentId]
   )
 
@@ -50,7 +67,7 @@ export async function isEligibleVoter(electionId, studentId, connection = pool) 
   return rows.length > 0
 }
 
-// Get election
+// Get election by ID
 export async function getElectionById(electionId, connection = pool) {
   const [rows] = await connection.query(
     `SELECT id, title, description, status, start_date, end_date, created_by, created_at
@@ -89,11 +106,13 @@ export async function getCandidateById(
   connection = pool
 ) {
   const [rows] = await connection.query(
-    `SELECT id, election_id, position_id, student_id, manifesto, photo_url, status
-     FROM candidates
-     WHERE id = ?
-       AND election_id = ?
-       AND position_id = ?
+    `SELECT c.id, c.election_id, c.position_id, c.student_id, c.manifesto, c.photo_url, c.status,
+            s.full_name, s.student_id AS student_code
+     FROM candidates c
+     JOIN students s ON c.student_id = s.id
+     WHERE c.id = ?
+       AND c.election_id = ?
+       AND c.position_id = ?
      LIMIT 1`,
     [candidateId, electionId, positionId]
   )
@@ -101,7 +120,7 @@ export async function getCandidateById(
   return rows[0] || null
 }
 
-// Insert vote
+// Insert single vote
 export async function createVote(
   electionId,
   positionId,
@@ -114,6 +133,32 @@ export async function createVote(
       (election_id, position_id, candidate_id, student_id, voted_at)
      VALUES (?, ?, ?, ?, NOW())`,
     [electionId, positionId, candidateId, studentId]
+  )
+
+  return result
+}
+
+// Insert multiple votes in batch using the active transaction connection
+export async function createVotesBatch(
+  votesArray,
+  connection = pool
+) {
+  if (!votesArray || votesArray.length === 0) {
+    return []
+  }
+
+  const values = votesArray.map((v) => [
+    v.election_id,
+    v.position_id,
+    v.candidate_id,
+    v.student_id
+  ])
+
+  const [result] = await connection.query(
+    `INSERT INTO votes
+      (election_id, position_id, candidate_id, student_id)
+     VALUES ?`,
+    [values]
   )
 
   return result
@@ -194,16 +239,17 @@ export async function getElectionResults(electionId) {
     const pos = resultsByPosition[posId]
     const totalPosVotes = pos.totalVotes
 
-    pos.candidates.forEach(cand => {
-      cand.percentage = totalPosVotes > 0 
-        ? ((cand.voteCount / totalPosVotes) * 100).toFixed(2) + '%' 
-        : '0.00%'
+    pos.candidates.forEach((cand) => {
+      cand.percentage =
+        totalPosVotes > 0
+          ? ((cand.voteCount / totalPosVotes) * 100).toFixed(2) + '%'
+          : '0.00%'
     })
 
     if (pos.candidates.length > 0) {
-      const highestVotes = Math.max(...pos.candidates.map(c => c.voteCount))
+      const highestVotes = Math.max(...pos.candidates.map((c) => c.voteCount))
       if (highestVotes > 0) {
-        const winners = pos.candidates.filter(c => c.voteCount === highestVotes)
+        const winners = pos.candidates.filter((c) => c.voteCount === highestVotes)
         if (winners.length === 1) {
           pos.winner = {
             candidateId: winners[0].candidateId,
@@ -246,7 +292,10 @@ export async function getElectionStats(electionId) {
   const totalEligible = eligibleCountRows[0]?.total_eligible || 0
   const votedStudents = votedStudentsRows[0]?.total_voted_students || 0
   const totalVotesCast = totalVotesRows[0]?.total_votes_cast || 0
-  const turnoutPercentage = totalEligible > 0 ? ((votedStudents / totalEligible) * 100).toFixed(2) : "0.00"
+  const turnoutPercentage =
+    totalEligible > 0
+      ? ((votedStudents / totalEligible) * 100).toFixed(2)
+      : '0.00'
 
   return {
     totalEligibleVoters: Number(totalEligible),

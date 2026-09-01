@@ -7,12 +7,16 @@ import {
 
 import { AuthProvider } from "./context/AuthContext";
 
+import { Toaster } from "react-hot-toast";
+
 import Login from "./pages/auth/Login";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ChangePassword from "./pages/auth/ChangePassword";
 
 import SuperAdminDashboard
   from "./pages/superadmin/SuperAdminDashboard";
+import ElectionResults
+  from "./pages/superadmin/ElectionResults";
 
 import AdminDashboard
   from "./pages/admin/AdminDashboard";
@@ -24,6 +28,8 @@ import ProtectedRoute
   from "./routes/ProtectedRoute";
 
 import ElectionDetails from "./pages/student/ElectionDetails";
+import ConfirmVote from "./pages/student/ConfirmVote";
+import Results from "./pages/student/Results";
 
 
 function Unauthorized() {
@@ -42,6 +48,7 @@ export default function App() {
     <BrowserRouter>
 
       <AuthProvider>
+        <Toaster position="top-right" />
 
         <Routes>
 
@@ -67,6 +74,39 @@ export default function App() {
                 allowedRoles={["SUPER_ADMIN"]}
               >
                 <SuperAdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/super-admin"
+            element={
+              <ProtectedRoute
+                allowedRoles={["SUPER_ADMIN"]}
+              >
+                <SuperAdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/super-admin/elections/:electionId/results"
+            element={
+              <ProtectedRoute
+                allowedRoles={["SUPER_ADMIN"]}
+              >
+                <ElectionResults />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/superadmin/elections/:electionId/results"
+            element={
+              <ProtectedRoute
+                allowedRoles={["SUPER_ADMIN"]}
+              >
+                <ElectionResults />
               </ProtectedRoute>
             }
           />
@@ -97,12 +137,67 @@ export default function App() {
           />
 
           <Route
+            path="/student/dashboard"
+            element={
+              <ProtectedRoute
+                allowedRoles={["STUDENT"]}
+              >
+                <StudentDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
             path="/student/elections/:id"
             element={
               <ProtectedRoute
                 allowedRoles={["STUDENT"]}
               >
                 <ElectionDetails />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/student/elections/:electionId/results"
+            element={
+              <ProtectedRoute
+                allowedRoles={["STUDENT", "ADMIN", "SUPER_ADMIN"]}
+              >
+                <Results />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/student/results/:electionId"
+            element={
+              <ProtectedRoute
+                allowedRoles={["STUDENT", "ADMIN", "SUPER_ADMIN"]}
+              >
+                <Results />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/student/confirm-vote"
+            element={
+              <ProtectedRoute
+                allowedRoles={["STUDENT"]}
+              >
+                <ConfirmVote />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/student/elections/:id/confirm"
+            element={
+              <ProtectedRoute
+                allowedRoles={["STUDENT"]}
+              >
+                <ConfirmVote />
               </ProtectedRoute>
             }
           />
