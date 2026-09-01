@@ -1,17 +1,4 @@
 import api from "./api";
-
-/**
- * Submit all selected votes in a single transaction request.
- * Payload format:
- * {
- *   "election_id": 1,
- *   "votes": [
- *     { "position_id": 1, "candidate_id": 5 },
- *     { "position_id": 2, "candidate_id": 8 }
- *   ]
- * }
- * student_id is omitted and automatically extracted by backend from JWT.
- */
 export const submitVotes = async ({ election_id, votes }) => {
   const payload = {
     election_id: Number(election_id),

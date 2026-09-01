@@ -17,4 +17,11 @@ router.get(
   getElectionResults
 )
 
+router.get(
+  '/election/:electionId',
+  authenticateToken,
+  authorizeRoles('SUPER_ADMIN', 'ADMIN', 'STUDENT'),
+  getElectionResults
+)
+
 export default router

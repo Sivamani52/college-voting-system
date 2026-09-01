@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { Vote, Clock, CheckCircle, User } from "lucide-react";
+import { Vote, Clock, CheckCircle, User, Trophy } from "lucide-react";
 import { useAuth } from "../../context/useAuth";
 import {
   getMyProfile,
   getMyElections,
+  getMyVotes,
 } from "../../services/studentService";
 import Navbar from "../../components/common/Navbar";
 import StatCard from "../../components/common/StatCard";
@@ -36,12 +37,34 @@ export default function StudentDashboard() {
         profileData
       );
 
-      setElections(
+      const rawElections =
         electionData.elections ||
         electionData.data ||
         electionData ||
-        []
+        [];
+
+      // Check student votes for elections in parallel to show voted checkmarks
+      const enrichedElections = await Promise.all(
+        rawElections.map(async (el) => {
+          try {
+            const voteRes = await getMyVotes(el.id);
+            const votes = voteRes.votes || voteRes.data || voteRes || [];
+            return {
+              ...el,
+              hasVoted: votes.length > 0,
+              myVotes: votes,
+            };
+          } catch {
+            return {
+              ...el,
+              hasVoted: false,
+              myVotes: [],
+            };
+          }
+        })
       );
+
+      setElections(enrichedElections);
     } catch (err) {
       console.error("Student dashboard error:", err);
 
@@ -66,11 +89,15 @@ export default function StudentDashboard() {
     (election) => election.status === "UPCOMING"
   );
 
-  const completedElections = elections.filter(
-    (election) =>
-      election.status === "CLOSED" ||
-      election.status === "RESULT_PUBLISHED"
+  const publishedElections = elections.filter(
+    (election) => election.status === "RESULT_PUBLISHED"
   );
+
+  const closedElections = elections.filter(
+    (election) => election.status === "CLOSED"
+  );
+
+  const completedCount = publishedElections.length + closedElections.length;
 
   if (loading) {
     return (
@@ -96,7 +123,7 @@ export default function StudentDashboard() {
             Welcome, {profile?.full_name || "Student"} 👋
           </h2>
           <p className="mt-2 text-gray-500 text-sm">
-            View your elections and cast your vote securely.
+            View active elections, cast your vote, and inspect published election results.
           </p>
         </div>
 
@@ -111,25 +138,25 @@ export default function StudentDashboard() {
             icon={<Vote size={22} />}
           />
           <StatCard
+            title="Results Published"
+            value={publishedElections.length}
+            icon={<Trophy size={22} />}
+          />
+          <StatCard
             title="Upcoming"
             value={upcomingElections.length}
             icon={<Clock size={22} />}
           />
           <StatCard
             title="Completed"
-            value={completedElections.length}
+            value={completedCount}
             icon={<CheckCircle size={22} />}
-          />
-          <StatCard
-            title="My Profile"
-            value="Active"
-            icon={<User size={22} />}
           />
         </div>
 
         {/* Profile Information */}
         {profile && (
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-xs p-6">
+          <div className="bg-white rounded-3xl border border-gray-200 shadow-xs p-6">
             <div className="flex items-center justify-between mb-5 border-b border-gray-100 pb-4">
               <div>
                 <h3 className="text-lg font-bold text-gray-900">
@@ -139,7 +166,7 @@ export default function StudentDashboard() {
                   Your registered college academic profile
                 </p>
               </div>
-              <div className="p-2.5 rounded-xl bg-gray-50 text-gray-400">
+              <div className="p-2.5 rounded-2xl bg-gray-50 text-gray-400">
                 <User size={20} />
               </div>
             </div>
@@ -185,15 +212,53 @@ export default function StudentDashboard() {
           </div>
         )}
 
+        {/* Published Results Section */}
+        {publishedElections.length > 0 && (
+          <section className="bg-gradient-to-r from-purple-50 via-indigo-50 to-blue-50 border border-purple-200/80 rounded-3xl p-6 sm:p-8 space-y-5">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Trophy className="text-purple-600" size={24} />
+                  <h3 className="text-xl font-black text-gray-900">
+                    Published Election Results
+                  </h3>
+                </div>
+                <p className="text-xs text-gray-600 mt-0.5">
+                  Official certified results are available for review
+                </p>
+              </div>
+              <span className="px-3 py-1 bg-purple-100 text-purple-800 text-xs font-bold rounded-full border border-purple-200">
+                {publishedElections.length} Published
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {publishedElections.map((election) => (
+                <ElectionCard
+                  key={election.id}
+                  election={election}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Active Elections */}
         <section>
-          <div className="mb-5">
-            <h3 className="text-xl font-bold text-gray-900">
-              Active Elections
-            </h3>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Elections you can currently participate in
-            </p>
+          <div className="mb-5 flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-bold text-gray-900">
+                Active Elections
+              </h3>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Elections you can currently participate in
+              </p>
+            </div>
+            {activeElections.length > 0 && (
+              <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-bold rounded-full">
+                {activeElections.length} Live
+              </span>
+            )}
           </div>
 
           {activeElections.length === 0 ? (
@@ -228,6 +293,29 @@ export default function StudentDashboard() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {upcomingElections.map((election) => (
+                <ElectionCard
+                  key={election.id}
+                  election={election}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Closed Elections (not yet published) */}
+        {closedElections.length > 0 && (
+          <section>
+            <div className="mb-5">
+              <h3 className="text-xl font-bold text-gray-900">
+                Closed Elections
+              </h3>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Voting has concluded. Results awaiting publication by administrators.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {closedElections.map((election) => (
                 <ElectionCard
                   key={election.id}
                   election={election}

@@ -215,7 +215,10 @@ export default function ElectionDetails() {
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
                   {election.title}
                 </h1>
-                <ElectionStatusBadge status={election.status} />
+                <ElectionStatusBadge
+                  status={election.status}
+                  hasVoted={isAllVoted || myVotes.length > 0}
+                />
               </div>
               <p className="text-gray-600 text-sm max-w-2xl">
                 {election.description || "Official college election."}
@@ -251,11 +254,15 @@ export default function ElectionDetails() {
                     <span className="font-semibold">Eligible Voter:</span> You are registered on the official voter roster for this election.
                   </div>
                 </div>
-                {isAllVoted && (
+                {isAllVoted ? (
                   <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800">
                     <CheckCircle2 size={14} /> All Positions Voted
                   </span>
-                )}
+                ) : myVotes.length > 0 ? (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                    <CheckCircle2 size={14} /> {myVotes.length} of {positions.length} Positions Voted
+                  </span>
+                ) : null}
               </div>
             ) : (
               <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-sm">
@@ -270,7 +277,7 @@ export default function ElectionDetails() {
 
         {/* Results View if Published */}
         {election.status === "RESULT_PUBLISHED" && results && (
-          <ElectionResultsView results={results} />
+          <ElectionResultsView results={results} electionId={id} />
         )}
 
         {/* Positions & Candidates List */}
