@@ -7,6 +7,24 @@ export const getMyProfile = async () => {
   return response.data;
 };
 
+// Get logged-in admin's profile
+export const getMyAdminProfile = async () => {
+  const response = await api.get("/admins/profile");
+  return response.data;
+};
+
+// Get all students (scoped by backend based on role)
+export const getAllStudents = async (params) => {
+  const response = await api.get("/students", { params });
+  return response.data;
+};
+
+// Create a new student
+export const createStudent = async (studentData) => {
+  const response = await api.post("/students", studentData);
+  return response.data;
+};
+
 // Get elections available to the logged-in student
 export const getMyElections = async () => {
   const response = await api.get("/elections");
