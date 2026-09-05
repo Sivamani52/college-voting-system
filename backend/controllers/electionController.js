@@ -2,7 +2,8 @@ import {
   createElection,
   findAllElections,
   findElectionById,
-  updateElectionStatus
+  updateElectionStatus,
+  deleteElection
 } from "../models/electionModel.js";
 
 
@@ -182,6 +183,30 @@ export async function changeElectionStatus(req, res) {
 
     return res.status(500).json({
       message: "Failed to update election status"
+    });
+  }
+}
+
+export async function deleteElectionController(req, res) {
+  try {
+    const { id } = req.params;
+
+    const election = await findElectionById(id);
+    if (!election) {
+      return res.status(404).json({
+        message: "Election not found"
+      });
+    }
+
+    await deleteElection(id);
+
+    return res.json({
+      message: "Election deleted successfully"
+    });
+  } catch (error) {
+    console.error("Delete election error:", error);
+    return res.status(500).json({
+      message: "Failed to delete election"
     });
   }
 }

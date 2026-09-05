@@ -815,18 +815,24 @@ export default function SuperAdminDashboard() {
       <Modal
         isOpen={isCreateElectionOpen}
         onClose={() => setIsCreateElectionOpen(false)}
-        title="Create New Election Session"
-        icon={<Vote size={24} className="text-blue-600" />}
+        title="Create New Election"
+        subtitle="Configure election parameters and voting window for the college"
+        icon={<Vote size={22} className="text-blue-600" />}
         confirmText={actionLoading ? "Creating..." : "Create Election"}
         confirmDisabled={actionLoading}
         onConfirm={handleCreateElectionSubmit}
+        maxWidth="max-w-lg"
       >
         <form onSubmit={handleCreateElectionSubmit} className="space-y-4 text-left">
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
-              Election Title *
+            <label
+              htmlFor="electionTitle"
+              className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1"
+            >
+              Election Title <span className="text-red-500">*</span>
             </label>
             <input
+              id="electionTitle"
               type="text"
               required
               placeholder="e.g. Student Council General Election 2026"
@@ -834,53 +840,65 @@ export default function SuperAdminDashboard() {
               onChange={(e) =>
                 setElectionForm({ ...electionForm, title: e.target.value })
               }
-              className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full px-3.5 py-2.5 bg-slate-50/70 border border-gray-300 rounded-xl text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition shadow-2xs"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
-              Description
+            <label
+              htmlFor="electionDesc"
+              className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1"
+            >
+              Description <span className="text-gray-400 font-normal text-[11px]">(Optional)</span>
             </label>
             <textarea
-              rows={2}
-              placeholder="Brief summary of positions and voting terms..."
+              id="electionDesc"
+              rows={3}
+              placeholder="Brief summary of council positions, candidate qualifications, and voting instructions..."
               value={electionForm.description}
               onChange={(e) =>
                 setElectionForm({ ...electionForm, description: e.target.value })
               }
-              className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full px-3.5 py-2.5 bg-slate-50/70 border border-gray-300 rounded-xl text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition shadow-2xs"
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
-                Start Date & Time *
+              <label
+                htmlFor="startDate"
+                className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1"
+              >
+                Start Date & Time <span className="text-red-500">*</span>
               </label>
               <input
+                id="startDate"
                 type="datetime-local"
                 required
                 value={electionForm.startDate}
                 onChange={(e) =>
                   setElectionForm({ ...electionForm, startDate: e.target.value })
                 }
-                className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-3 py-2.5 bg-slate-50/70 border border-gray-300 rounded-xl text-xs text-gray-900 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition shadow-2xs"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
-                End Date & Time *
+              <label
+                htmlFor="endDate"
+                className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1"
+              >
+                End Date & Time <span className="text-red-500">*</span>
               </label>
               <input
+                id="endDate"
                 type="datetime-local"
                 required
                 value={electionForm.endDate}
                 onChange={(e) =>
                   setElectionForm({ ...electionForm, endDate: e.target.value })
                 }
-                className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-3 py-2.5 bg-slate-50/70 border border-gray-300 rounded-xl text-xs text-gray-900 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition shadow-2xs"
               />
             </div>
           </div>
@@ -892,31 +910,41 @@ export default function SuperAdminDashboard() {
         isOpen={isCreateAdminOpen}
         onClose={() => setIsCreateAdminOpen(false)}
         title="Add Department Administrator"
-        icon={<UserCheck size={24} className="text-blue-600" />}
-        confirmText={actionLoading ? "Creating..." : "Add Administrator"}
+        subtitle="Create an admin account to oversee department-level elections and class rosters"
+        icon={<UserCheck size={22} className="text-blue-600" />}
+        confirmText={actionLoading ? "Creating..." : "Create Admin Account"}
         confirmDisabled={actionLoading}
         onConfirm={handleCreateAdminSubmit}
+        maxWidth="max-w-lg"
       >
-        <form onSubmit={handleCreateAdminSubmit} className="space-y-3.5 text-left">
+        <form onSubmit={handleCreateAdminSubmit} className="space-y-4 text-left">
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
-              Admin Full Name *
+            <label
+              htmlFor="adminName"
+              className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1"
+            >
+              Admin Full Name <span className="text-red-500">*</span>
             </label>
             <input
+              id="adminName"
               type="text"
               required
               placeholder="e.g. Dr. Rajesh Kumar"
               value={adminForm.name}
               onChange={(e) => setAdminForm({ ...adminForm, name: e.target.value })}
-              className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full px-3.5 py-2.5 bg-slate-50/70 border border-gray-300 rounded-xl text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition shadow-2xs"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
-              Email Address *
+            <label
+              htmlFor="adminEmail"
+              className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1"
+            >
+              College Email Address <span className="text-red-500">*</span>
             </label>
             <input
+              id="adminEmail"
               type="email"
               required
               placeholder="e.g. rajesh.kumar@college.edu"
@@ -924,24 +952,70 @@ export default function SuperAdminDashboard() {
               onChange={(e) =>
                 setAdminForm({ ...adminForm, email: e.target.value })
               }
-              className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full px-3.5 py-2.5 bg-slate-50/70 border border-gray-300 rounded-xl text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition shadow-2xs"
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
-              Department ID *
-            </label>
-            <input
-              type="number"
-              required
-              min={1}
-              value={adminForm.departmentId}
-              onChange={(e) =>
-                setAdminForm({ ...adminForm, departmentId: e.target.value })
-              }
-              className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label
+                htmlFor="adminDept"
+                className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1"
+              >
+                Dept ID <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="adminDept"
+                type="number"
+                required
+                min={1}
+                value={adminForm.departmentId}
+                onChange={(e) =>
+                  setAdminForm({ ...adminForm, departmentId: e.target.value })
+                }
+                className="w-full px-3.5 py-2.5 bg-slate-50/70 border border-gray-300 rounded-xl text-xs sm:text-sm text-gray-900 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition shadow-2xs"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="adminYear"
+                className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1"
+              >
+                Year ID <span className="text-gray-400 font-normal text-[10px]">(Opt)</span>
+              </label>
+              <input
+                id="adminYear"
+                type="number"
+                min={1}
+                placeholder="e.g. 1"
+                value={adminForm.yearId}
+                onChange={(e) =>
+                  setAdminForm({ ...adminForm, yearId: e.target.value })
+                }
+                className="w-full px-3.5 py-2.5 bg-slate-50/70 border border-gray-300 rounded-xl text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition shadow-2xs"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="adminSection"
+                className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1"
+              >
+                Section ID <span className="text-gray-400 font-normal text-[10px]">(Opt)</span>
+              </label>
+              <input
+                id="adminSection"
+                type="number"
+                min={1}
+                placeholder="e.g. 1"
+                value={adminForm.sectionId}
+                onChange={(e) =>
+                  setAdminForm({ ...adminForm, sectionId: e.target.value })
+                }
+                className="w-full px-3.5 py-2.5 bg-slate-50/70 border border-gray-300 rounded-xl text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition shadow-2xs"
+              />
+            </div>
           </div>
         </form>
       </Modal>
@@ -951,51 +1025,65 @@ export default function SuperAdminDashboard() {
         isOpen={isCreateStudentOpen}
         onClose={() => setIsCreateStudentOpen(false)}
         title="Register Student Account"
-        icon={<GraduationCap size={24} className="text-blue-600" />}
+        subtitle="Add a student account with assigned department, year, and section scope"
+        icon={<GraduationCap size={22} className="text-blue-600" />}
         confirmText={actionLoading ? "Registering..." : "Register Student"}
         confirmDisabled={actionLoading}
         onConfirm={handleCreateStudentSubmit}
+        maxWidth="max-w-lg"
       >
-        <form onSubmit={handleCreateStudentSubmit} className="space-y-3 text-left">
+        <form onSubmit={handleCreateStudentSubmit} className="space-y-3.5 text-left">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
-                Student ID *
+              <label
+                htmlFor="superStuId"
+                className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1"
+              >
+                Student ID <span className="text-red-500">*</span>
               </label>
               <input
+                id="superStuId"
                 type="text"
                 required
-                placeholder="STU2026099"
+                placeholder="e.g. 21CS099"
                 value={studentForm.studentId}
                 onChange={(e) =>
                   setStudentForm({ ...studentForm, studentId: e.target.value })
                 }
-                className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-3 py-2 bg-slate-50/70 border border-gray-300 rounded-xl text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition shadow-2xs"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
-                Full Name *
+              <label
+                htmlFor="superStuName"
+                className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1"
+              >
+                Full Name <span className="text-red-500">*</span>
               </label>
               <input
+                id="superStuName"
                 type="text"
                 required
-                placeholder="Student Name"
+                placeholder="Student Full Name"
                 value={studentForm.fullName}
                 onChange={(e) =>
                   setStudentForm({ ...studentForm, fullName: e.target.value })
                 }
-                className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-3 py-2 bg-slate-50/70 border border-gray-300 rounded-xl text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition shadow-2xs"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
-              Email Address *
+            <label
+              htmlFor="superStuEmail"
+              className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1"
+            >
+              College Email Address <span className="text-red-500">*</span>
             </label>
             <input
+              id="superStuEmail"
               type="email"
               required
               placeholder="student@college.edu"
@@ -1003,16 +1091,20 @@ export default function SuperAdminDashboard() {
               onChange={(e) =>
                 setStudentForm({ ...studentForm, email: e.target.value })
               }
-              className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full px-3 py-2 bg-slate-50/70 border border-gray-300 rounded-xl text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition shadow-2xs"
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2.5">
             <div>
-              <label className="block text-[11px] font-bold uppercase text-gray-700 mb-1">
-                Dept ID *
+              <label
+                htmlFor="superStuDept"
+                className="block text-[10px] font-bold uppercase text-gray-700 mb-1"
+              >
+                Dept ID <span className="text-red-500">*</span>
               </label>
               <input
+                id="superStuDept"
                 type="number"
                 min={1}
                 required
@@ -1020,15 +1112,19 @@ export default function SuperAdminDashboard() {
                 onChange={(e) =>
                   setStudentForm({ ...studentForm, departmentId: e.target.value })
                 }
-                className="w-full px-2.5 py-2 bg-gray-50 border border-gray-300 rounded-xl text-xs focus:bg-white focus:outline-none"
+                className="w-full px-2.5 py-2 bg-slate-50/70 border border-gray-300 rounded-xl text-xs font-mono text-gray-900 focus:bg-white focus:outline-none shadow-2xs"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold uppercase text-gray-700 mb-1">
-                Year ID *
+              <label
+                htmlFor="superStuYear"
+                className="block text-[10px] font-bold uppercase text-gray-700 mb-1"
+              >
+                Year ID <span className="text-red-500">*</span>
               </label>
               <input
+                id="superStuYear"
                 type="number"
                 min={1}
                 required
@@ -1036,15 +1132,19 @@ export default function SuperAdminDashboard() {
                 onChange={(e) =>
                   setStudentForm({ ...studentForm, yearId: e.target.value })
                 }
-                className="w-full px-2.5 py-2 bg-gray-50 border border-gray-300 rounded-xl text-xs focus:bg-white focus:outline-none"
+                className="w-full px-2.5 py-2 bg-slate-50/70 border border-gray-300 rounded-xl text-xs font-mono text-gray-900 focus:bg-white focus:outline-none shadow-2xs"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold uppercase text-gray-700 mb-1">
-                Sec ID *
+              <label
+                htmlFor="superStuSec"
+                className="block text-[10px] font-bold uppercase text-gray-700 mb-1"
+              >
+                Sec ID <span className="text-red-500">*</span>
               </label>
               <input
+                id="superStuSec"
                 type="number"
                 min={1}
                 required
@@ -1052,23 +1152,27 @@ export default function SuperAdminDashboard() {
                 onChange={(e) =>
                   setStudentForm({ ...studentForm, sectionId: e.target.value })
                 }
-                className="w-full px-2.5 py-2 bg-gray-50 border border-gray-300 rounded-xl text-xs focus:bg-white focus:outline-none"
+                className="w-full px-2.5 py-2 bg-slate-50/70 border border-gray-300 rounded-xl text-xs font-mono text-gray-900 focus:bg-white focus:outline-none shadow-2xs"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
-              Phone Number
+            <label
+              htmlFor="superStuPhone"
+              className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1"
+            >
+              Phone Number <span className="text-gray-400 font-normal text-[11px]">(Optional)</span>
             </label>
             <input
-              type="text"
-              placeholder="9876543210"
+              id="superStuPhone"
+              type="tel"
+              placeholder="e.g. 9876543210"
               value={studentForm.phone}
               onChange={(e) =>
                 setStudentForm({ ...studentForm, phone: e.target.value })
               }
-              className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full px-3 py-2 bg-slate-50/70 border border-gray-300 rounded-xl text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition shadow-2xs"
             />
           </div>
         </form>
@@ -1080,15 +1184,16 @@ export default function SuperAdminDashboard() {
         onClose={() => {
           if (!actionLoading) setIsStatusModalOpen(false);
         }}
-        title={`Change Election Status to ${targetStatus}`}
-        icon={<Lock size={24} className="text-amber-600" />}
+        title={`Change Election Status to "${targetStatus}"`}
+        subtitle="Confirm election lifecycle transition"
+        icon={<Lock size={22} className="text-amber-600" />}
         confirmText={actionLoading ? "Updating..." : "Confirm Status Change"}
         confirmDisabled={actionLoading}
         confirmVariant="primary"
         onConfirm={handleConfirmStatusChange}
       >
-        <p className="text-gray-600 text-sm leading-relaxed">
-          Are you sure you want to change the status of <strong>{selectedElection?.title}</strong> to <strong>{targetStatus}</strong>?
+        <p className="text-gray-600 text-sm leading-relaxed text-center sm:text-left">
+          Are you sure you want to transition the status of <strong>{selectedElection?.title}</strong> to <strong className="text-blue-600">{targetStatus}</strong>?
         </p>
       </Modal>
     </div>
