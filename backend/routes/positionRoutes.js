@@ -19,11 +19,11 @@ import {
 const router = express.Router();
 
 
-// Create position (Super Admin only)
+// Create position (Super Admin, Admin)
 router.post(
   "/",
   authenticateToken,
-  authorizeRoles("SUPER_ADMIN"),
+  authorizeRoles("SUPER_ADMIN", "ADMIN"),
   createPositionController
 );
 

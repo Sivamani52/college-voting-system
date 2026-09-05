@@ -143,6 +143,24 @@ export default function App() {
             }
           />
 
+          <Route
+            path="/admin/elections/:electionId/results"
+            element={
+              <ProtectedRoute allowedRoles={["ADMIN", "SUPER_ADMIN"]}>
+                <Results />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/results/:electionId"
+            element={
+              <ProtectedRoute allowedRoles={["ADMIN", "SUPER_ADMIN"]}>
+                <Results />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Student */}
           <Route
             path="/student"

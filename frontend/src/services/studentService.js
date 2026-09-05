@@ -25,6 +25,16 @@ export const createStudent = async (studentData) => {
   return response.data;
 };
 
+// Change Password
+export const changePassword = async ({ userId, currentPassword, newPassword }) => {
+  const response = await api.post("/auth/change-password", {
+    userId,
+    currentPassword,
+    newPassword,
+  });
+  return response.data;
+};
+
 // Get elections available to the logged-in student
 export const getMyElections = async () => {
   const response = await api.get("/elections");

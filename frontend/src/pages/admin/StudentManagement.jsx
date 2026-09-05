@@ -17,6 +17,9 @@ import {
   Hash,
   AlertCircle,
   X,
+  ShieldCheck,
+  CheckCircle2,
+  User,
 } from "lucide-react";
 import AdminLayout from "../../components/admin/AdminLayout";
 import Modal from "../../components/common/Modal";
@@ -145,7 +148,7 @@ export default function StudentManagement() {
   const validateForm = () => {
     const errors = {};
     if (!formData.studentId.trim()) {
-      errors.studentId = "Student ID is required";
+      errors.studentId = "Student ID is required (e.g. 21CS001)";
     }
     if (!formData.fullName.trim()) {
       errors.fullName = "Full Name is required";
@@ -153,7 +156,7 @@ export default function StudentManagement() {
     if (!formData.email.trim()) {
       errors.email = "College Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
-      errors.email = "Please enter a valid email address";
+      errors.email = "Please enter a valid college email address";
     }
 
     if (
@@ -234,34 +237,39 @@ export default function StudentManagement() {
         {/* Header Section */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-100 uppercase tracking-wider">
+                <Users size={12} /> Class Roster
+              </span>
+            </div>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-gray-900 tracking-tight">
               Student Management
             </h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Manage students assigned to your class.
+            <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+              View and register students belonging to your assigned department class.
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 shrink-0">
             <button
               type="button"
               onClick={() => loadData(false)}
               disabled={refreshing || loading}
-              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 transition shadow-xs disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 active:scale-98 transition shadow-2xs disabled:opacity-50 cursor-pointer"
               title="Refresh students"
             >
               <RefreshCw
                 size={16}
                 className={refreshing ? "animate-spin text-blue-600" : "text-gray-500"}
               />
-              <span>Refresh</span>
+              <span>{refreshing ? "Refreshing..." : "Refresh"}</span>
             </button>
 
             <button
               type="button"
               onClick={handleOpenModal}
               disabled={loading}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm font-semibold text-white transition shadow-xs disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-xs sm:text-sm font-bold text-white shadow-xs shadow-blue-500/20 active:scale-98 transition disabled:opacity-50 cursor-pointer"
             >
               <UserPlus size={16} />
               <span>Add Student</span>
@@ -279,42 +287,42 @@ export default function StudentManagement() {
         )}
 
         {/* Class Assignment Badge Info */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-xs p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
+        <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200/80 shadow-2xs p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100/60 shadow-2xs">
               <GraduationCap size={20} />
             </div>
             <div>
-              <h2 className="text-xs font-bold uppercase tracking-wider text-gray-500">
+              <h2 className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
                 Assigned Class Scope
               </h2>
-              <p className="text-sm font-semibold text-gray-900 mt-0.5">
+              <p className="text-sm font-bold text-gray-900 mt-0.5">
                 {adminProfile?.full_name ? `${adminProfile.full_name}'s Class` : "Class Scope"}
               </p>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 font-medium border border-gray-200">
-              <Building2 size={13} className="text-gray-500" />
-              <span>Department ID:</span>
-              <strong className="text-gray-900">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 text-gray-700 font-semibold border border-gray-200/70 shadow-2xs">
+              <Building2 size={13} className="text-blue-600" />
+              <span className="text-gray-500">Dept ID:</span>
+              <strong className="text-gray-900 font-mono">
                 {adminProfile?.department_id ?? (loading ? "..." : "N/A")}
               </strong>
             </span>
 
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 font-medium border border-gray-200">
-              <Calendar size={13} className="text-gray-500" />
-              <span>Year ID:</span>
-              <strong className="text-gray-900">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 text-gray-700 font-semibold border border-gray-200/70 shadow-2xs">
+              <Calendar size={13} className="text-blue-600" />
+              <span className="text-gray-500">Year ID:</span>
+              <strong className="text-gray-900 font-mono">
                 {adminProfile?.year_id ?? (loading ? "..." : "N/A")}
               </strong>
             </span>
 
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 font-medium border border-gray-200">
-              <Layers size={13} className="text-gray-500" />
-              <span>Section ID:</span>
-              <strong className="text-gray-900">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 text-gray-700 font-semibold border border-gray-200/70 shadow-2xs">
+              <Layers size={13} className="text-blue-600" />
+              <span className="text-gray-500">Section ID:</span>
+              <strong className="text-gray-900 font-mono">
                 {adminProfile?.section_id ?? (loading ? "..." : "N/A")}
               </strong>
             </span>
@@ -327,25 +335,28 @@ export default function StudentManagement() {
             title="Total Students"
             value={loading ? "..." : stats.total}
             icon={<Users size={22} />}
+            description="Enrolled in class roster"
           />
           <StatCard
-            title="Active Students"
+            title="Active Voters"
             value={loading ? "..." : stats.active}
             icon={<UserCheck size={22} className="text-emerald-600" />}
+            description="Eligible to cast ballots"
           />
           <StatCard
-            title="Inactive Students"
+            title="Inactive Accounts"
             value={loading ? "..." : stats.inactive}
             icon={<UserX size={22} className="text-amber-600" />}
+            description="Suspended or pending"
           />
         </div>
 
         {/* Search and Filters Bar */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-xs p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200/80 shadow-2xs p-3.5 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           {/* Search Box */}
           <div className="relative w-full sm:max-w-md">
             <Search
-              size={18}
+              size={17}
               className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
             />
             <input
@@ -353,13 +364,13 @@ export default function StudentManagement() {
               placeholder="Search by Student ID, Name, or Email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-9 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              className="w-full pl-10 pr-9 py-2.5 bg-slate-50/70 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition shadow-2xs"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5 rounded-full"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5 rounded-full cursor-pointer"
                 aria-label="Clear search"
               >
                 <X size={14} />
@@ -369,31 +380,29 @@ export default function StudentManagement() {
 
           {/* Status Filter */}
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-            <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5">
-              <Filter size={14} className="text-gray-500" />
-              <span className="text-xs font-medium text-gray-500">Status:</span>
+            <div className="flex items-center gap-2 bg-slate-50/80 border border-gray-200/80 rounded-xl px-3 py-2 w-full sm:w-auto shadow-2xs">
+              <Filter size={14} className="text-gray-500 shrink-0" />
+              <span className="text-xs font-semibold text-gray-500">Filter:</span>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-transparent text-xs font-semibold text-gray-800 focus:outline-none cursor-pointer"
+                className="bg-transparent text-xs font-bold text-gray-800 focus:outline-none cursor-pointer w-full sm:w-auto"
               >
                 <option value="ALL">All Status</option>
-                <option value="ACTIVE">Active</option>
-                <option value="INACTIVE">Inactive</option>
+                <option value="ACTIVE">Active Voters</option>
+                <option value="INACTIVE">Inactive Voters</option>
               </select>
             </div>
           </div>
         </div>
 
         {/* Student Table / List */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
+        <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200/80 shadow-2xs overflow-hidden">
           {loading ? (
             /* Loading State */
-            <div className="p-12 text-center space-y-4">
-              <div className="inline-flex p-3 rounded-full bg-blue-50 text-blue-600 animate-spin">
-                <RefreshCw size={24} />
-              </div>
-              <p className="text-sm font-medium text-gray-600">
+            <div className="p-12 text-center space-y-3">
+              <div className="w-10 h-10 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-xs sm:text-sm font-medium text-gray-500">
                 Loading students roster...
               </p>
             </div>
@@ -408,7 +417,7 @@ export default function StudentManagement() {
                   <button
                     type="button"
                     onClick={handleOpenModal}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-xs transition"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-98 text-white rounded-xl text-xs sm:text-sm font-bold shadow-xs transition cursor-pointer"
                   >
                     <UserPlus size={16} />
                     <span>Add First Student</span>
@@ -430,7 +439,7 @@ export default function StudentManagement() {
                       setSearchQuery("");
                       setStatusFilter("ALL");
                     }}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs sm:text-sm font-semibold transition"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 active:scale-98 text-gray-700 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer"
                   >
                     <span>Clear Search & Filters</span>
                   </button>
@@ -439,10 +448,10 @@ export default function StudentManagement() {
             </div>
           ) : (
             /* Table Data */
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto table-container">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-gray-200 bg-gray-50/75 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                  <tr className="border-b border-gray-100 bg-slate-50/75 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
                     <th scope="col" className="py-3.5 px-4 sm:px-6">
                       Student
                     </th>
@@ -450,17 +459,17 @@ export default function StudentManagement() {
                       Student ID
                     </th>
                     <th scope="col" className="py-3.5 px-4 sm:px-6">
-                      Email
+                      College Email
                     </th>
                     <th scope="col" className="py-3.5 px-4 sm:px-6">
-                      Phone
+                      Phone Number
                     </th>
                     <th scope="col" className="py-3.5 px-4 sm:px-6 text-right sm:text-left">
-                      Status
+                      Voter Status
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 text-sm">
+                <tbody className="divide-y divide-gray-100 text-xs sm:text-sm">
                   {filteredStudents.map((student) => {
                     const studentId = student.student_id || student.studentId || "—";
                     const fullName = student.full_name || student.name || "Unnamed Student";
@@ -472,20 +481,20 @@ export default function StudentManagement() {
                     return (
                       <tr
                         key={student.id || student.student_id || studentId}
-                        className="hover:bg-gray-50/80 transition-colors"
+                        className="hover:bg-slate-50/60 transition-colors"
                       >
                         {/* Student Name & Avatar */}
                         <td className="py-4 px-4 sm:px-6">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-xs shrink-0 border border-blue-200">
+                            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-xs shrink-0 border border-blue-200 shadow-2xs">
                               {fullName.charAt(0).toUpperCase()}
                             </div>
                             <div className="min-w-0">
-                              <p className="font-semibold text-gray-900 truncate">
+                              <p className="font-bold text-gray-900 truncate leading-tight">
                                 {fullName}
                               </p>
-                              <p className="text-xs text-gray-400 sm:hidden truncate">
-                                {studentId}
+                              <p className="text-[11px] text-gray-400 sm:hidden font-mono mt-0.5 truncate">
+                                ID: {studentId}
                               </p>
                             </div>
                           </div>
@@ -493,7 +502,7 @@ export default function StudentManagement() {
 
                         {/* Student ID */}
                         <td className="py-4 px-4 sm:px-6">
-                          <span className="font-mono text-xs font-medium text-gray-700 bg-gray-100 px-2 py-1 rounded-md border border-gray-200">
+                          <span className="font-mono text-xs font-bold text-gray-800 bg-slate-100 px-2.5 py-1 rounded-lg border border-gray-200/80 shadow-2xs">
                             {studentId}
                           </span>
                         </td>
@@ -502,7 +511,7 @@ export default function StudentManagement() {
                         <td className="py-4 px-4 sm:px-6 text-gray-600">
                           <div className="flex items-center gap-1.5">
                             <Mail size={14} className="text-gray-400 shrink-0 hidden sm:inline" />
-                            <span className="truncate max-w-[200px] text-xs sm:text-sm">
+                            <span className="truncate max-w-[200px] text-xs sm:text-sm font-medium">
                               {email}
                             </span>
                           </div>
@@ -514,21 +523,21 @@ export default function StudentManagement() {
                             {phone !== "—" && (
                               <Phone size={14} className="text-gray-400 shrink-0 hidden sm:inline" />
                             )}
-                            <span>{phone}</span>
+                            <span className="font-medium">{phone}</span>
                           </div>
                         </td>
 
                         {/* Status */}
                         <td className="py-4 px-4 sm:px-6 text-right sm:text-left">
                           {isActive ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                              ACTIVE
+                              Active
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-600 border border-gray-200">
                               <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
-                              INACTIVE
+                              Inactive
                             </span>
                           )}
                         </td>
@@ -539,7 +548,7 @@ export default function StudentManagement() {
               </table>
 
               {/* Table Footer with count */}
-              <div className="p-4 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between text-xs text-gray-500">
+              <div className="p-3.5 sm:p-4 border-t border-gray-100 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-500 font-medium">
                 <span>
                   Showing <strong>{filteredStudents.length}</strong> of{" "}
                   <strong>{students.length}</strong> student{students.length === 1 ? "" : "s"}
@@ -551,9 +560,9 @@ export default function StudentManagement() {
                       setSearchQuery("");
                       setStatusFilter("ALL");
                     }}
-                    className="text-blue-600 hover:text-blue-800 font-semibold cursor-pointer"
+                    className="text-blue-600 hover:text-blue-800 font-bold cursor-pointer"
                   >
-                    Reset filters
+                    Reset all filters
                   </button>
                 )}
               </div>
@@ -569,32 +578,34 @@ export default function StudentManagement() {
               setIsCreateModalOpen(false);
             }
           }}
-          title="Add Student"
-          icon={<UserPlus size={24} className="text-blue-600" />}
-          confirmText={createLoading ? "Creating..." : "Add Student"}
+          title="Add New Student"
+          subtitle="Register a student account into your assigned department class"
+          icon={<UserPlus size={22} className="text-blue-600" />}
+          confirmText={createLoading ? "Registering..." : "Create Student Account"}
           cancelText="Cancel"
           onConfirm={handleCreateStudent}
           confirmDisabled={createLoading}
+          maxWidth="max-w-lg"
         >
           <form onSubmit={handleCreateStudent} className="space-y-4 text-left">
             {/* Auto-Assigned Class Scope Info */}
-            <div className="bg-blue-50/60 border border-blue-100 rounded-xl p-3 text-xs text-blue-800 space-y-1">
-              <p className="font-semibold text-blue-900 flex items-center gap-1.5">
-                <AlertCircle size={14} className="text-blue-600" />
-                Class Scope (Auto-Assigned from Admin Profile)
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-3.5 text-xs text-blue-900 space-y-2 shadow-2xs">
+              <p className="font-bold text-blue-950 flex items-center gap-1.5">
+                <ShieldCheck size={14} className="text-blue-600" />
+                <span>Class Scope (Auto-Assigned from Admin Profile)</span>
               </p>
-              <div className="grid grid-cols-3 gap-2 pt-1 font-medium text-blue-950">
-                <div className="bg-white/80 rounded-lg p-1.5 border border-blue-100 text-center">
-                  <span className="block text-[10px] text-gray-500">Dept ID</span>
-                  <strong>{adminProfile?.department_id ?? "N/A"}</strong>
+              <div className="grid grid-cols-3 gap-2 pt-0.5 text-center">
+                <div className="bg-white rounded-xl p-2 border border-blue-100/80 shadow-2xs">
+                  <span className="block text-[10px] text-gray-400 font-bold uppercase">Dept ID</span>
+                  <strong className="text-gray-900 font-mono text-xs">{adminProfile?.department_id ?? "N/A"}</strong>
                 </div>
-                <div className="bg-white/80 rounded-lg p-1.5 border border-blue-100 text-center">
-                  <span className="block text-[10px] text-gray-500">Year ID</span>
-                  <strong>{adminProfile?.year_id ?? "N/A"}</strong>
+                <div className="bg-white rounded-xl p-2 border border-blue-100/80 shadow-2xs">
+                  <span className="block text-[10px] text-gray-400 font-bold uppercase">Year ID</span>
+                  <strong className="text-gray-900 font-mono text-xs">{adminProfile?.year_id ?? "N/A"}</strong>
                 </div>
-                <div className="bg-white/80 rounded-lg p-1.5 border border-blue-100 text-center">
-                  <span className="block text-[10px] text-gray-500">Section ID</span>
-                  <strong>{adminProfile?.section_id ?? "N/A"}</strong>
+                <div className="bg-white rounded-xl p-2 border border-blue-100/80 shadow-2xs">
+                  <span className="block text-[10px] text-gray-400 font-bold uppercase">Section ID</span>
+                  <strong className="text-gray-900 font-mono text-xs">{adminProfile?.section_id ?? "N/A"}</strong>
                 </div>
               </div>
             </div>
@@ -610,7 +621,7 @@ export default function StudentManagement() {
               <div className="relative">
                 <Hash
                   size={15}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
                 />
                 <input
                   id="studentId"
@@ -624,7 +635,7 @@ export default function StudentManagement() {
                       setFormErrors({ ...formErrors, studentId: null });
                     }
                   }}
-                  className={`w-full pl-9 pr-3 py-2 bg-gray-50 border rounded-xl text-xs sm:text-sm text-gray-900 focus:bg-white focus:outline-none focus:ring-2 transition ${
+                  className={`w-full pl-10 pr-3 py-2.5 bg-slate-50/70 border rounded-xl text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:bg-white focus:outline-none focus:ring-2 transition shadow-2xs ${
                     formErrors.studentId
                       ? "border-red-300 focus:ring-red-400"
                       : "border-gray-300 focus:ring-blue-500"
@@ -632,7 +643,7 @@ export default function StudentManagement() {
                 />
               </div>
               {formErrors.studentId && (
-                <p className="text-[11px] text-red-600 mt-1 font-medium">
+                <p className="text-[11px] text-red-600 mt-1 font-semibold">
                   {formErrors.studentId}
                 </p>
               )}
@@ -646,26 +657,32 @@ export default function StudentManagement() {
               >
                 Full Name <span className="text-red-500">*</span>
               </label>
-              <input
-                id="fullName"
-                type="text"
-                required
-                placeholder="e.g. John Doe"
-                value={formData.fullName}
-                onChange={(e) => {
-                  setFormData({ ...formData, fullName: e.target.value });
-                  if (formErrors.fullName) {
-                    setFormErrors({ ...formErrors, fullName: null });
-                  }
-                }}
-                className={`w-full px-3 py-2 bg-gray-50 border rounded-xl text-xs sm:text-sm text-gray-900 focus:bg-white focus:outline-none focus:ring-2 transition ${
-                  formErrors.fullName
-                    ? "border-red-300 focus:ring-red-400"
-                    : "border-gray-300 focus:ring-blue-500"
-                }`}
-              />
+              <div className="relative">
+                <User
+                  size={15}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
+                />
+                <input
+                  id="fullName"
+                  type="text"
+                  required
+                  placeholder="e.g. John Doe"
+                  value={formData.fullName}
+                  onChange={(e) => {
+                    setFormData({ ...formData, fullName: e.target.value });
+                    if (formErrors.fullName) {
+                      setFormErrors({ ...formErrors, fullName: null });
+                    }
+                  }}
+                  className={`w-full pl-10 pr-3 py-2.5 bg-slate-50/70 border rounded-xl text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:bg-white focus:outline-none focus:ring-2 transition shadow-2xs ${
+                    formErrors.fullName
+                      ? "border-red-300 focus:ring-red-400"
+                      : "border-gray-300 focus:ring-blue-500"
+                  }`}
+                />
+              </div>
               {formErrors.fullName && (
-                <p className="text-[11px] text-red-600 mt-1 font-medium">
+                <p className="text-[11px] text-red-600 mt-1 font-semibold">
                   {formErrors.fullName}
                 </p>
               )}
@@ -682,7 +699,7 @@ export default function StudentManagement() {
               <div className="relative">
                 <Mail
                   size={15}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
                 />
                 <input
                   id="email"
@@ -696,7 +713,7 @@ export default function StudentManagement() {
                       setFormErrors({ ...formErrors, email: null });
                     }
                   }}
-                  className={`w-full pl-9 pr-3 py-2 bg-gray-50 border rounded-xl text-xs sm:text-sm text-gray-900 focus:bg-white focus:outline-none focus:ring-2 transition ${
+                  className={`w-full pl-10 pr-3 py-2.5 bg-slate-50/70 border rounded-xl text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:bg-white focus:outline-none focus:ring-2 transition shadow-2xs ${
                     formErrors.email
                       ? "border-red-300 focus:ring-red-400"
                       : "border-gray-300 focus:ring-blue-500"
@@ -704,7 +721,7 @@ export default function StudentManagement() {
                 />
               </div>
               {formErrors.email && (
-                <p className="text-[11px] text-red-600 mt-1 font-medium">
+                <p className="text-[11px] text-red-600 mt-1 font-semibold">
                   {formErrors.email}
                 </p>
               )}
@@ -716,12 +733,12 @@ export default function StudentManagement() {
                 htmlFor="phone"
                 className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1"
               >
-                Phone <span className="text-gray-400 font-normal text-[11px]">(Optional)</span>
+                Phone Number <span className="text-gray-400 font-normal text-[11px]">(Optional)</span>
               </label>
               <div className="relative">
                 <Phone
                   size={15}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
                 />
                 <input
                   id="phone"
@@ -731,7 +748,7 @@ export default function StudentManagement() {
                   onChange={(e) =>
                     setFormData({ ...formData, phone: e.target.value })
                   }
-                  className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-300 rounded-xl text-xs sm:text-sm text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                  className="w-full pl-10 pr-3 py-2.5 bg-slate-50/70 border border-gray-300 rounded-xl text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition shadow-2xs"
                 />
               </div>
             </div>

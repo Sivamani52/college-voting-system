@@ -20,6 +20,9 @@ import {
   GraduationCap,
   Sparkles,
   ChevronRight,
+  Trophy,
+  UserPlus,
+  PlusCircle,
 } from "lucide-react";
 import { useAuth } from "../../context/useAuth";
 import AdminLayout from "../../components/admin/AdminLayout";
@@ -28,6 +31,7 @@ import EmptyState from "../../components/common/EmptyState";
 import Alert from "../../components/common/Alert";
 import { getMyAdminProfile, getAllStudents } from "../../services/studentService";
 import { getAllElections } from "../../services/electionService";
+import { ElectionStatusBadge } from "../../components/student/ElectionCard";
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -43,7 +47,7 @@ export default function AdminDashboard() {
   const [loadingElections, setLoadingElections] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Section Error States (Isolated to prevent full-dashboard crash)
+  // Section Error States
   const [profileError, setProfileError] = useState(null);
   const [studentsError, setStudentsError] = useState(null);
   const [electionsError, setElectionsError] = useState(null);
@@ -136,7 +140,7 @@ export default function AdminDashboard() {
     return { total, draft, upcoming, active, closed, resultPublished };
   }, [elections]);
 
-  // Recent / Sorted Elections (Active/Upcoming first, then by date)
+  // Recent / Sorted Elections
   const recentElections = useMemo(() => {
     const statusPriority = {
       ACTIVE: 1,
@@ -149,524 +153,292 @@ export default function AdminDashboard() {
     return [...elections].sort((a, b) => {
       const priorityA = statusPriority[(a.status || "").toUpperCase()] || 99;
       const priorityB = statusPriority[(b.status || "").toUpperCase()] || 99;
-      if (priorityA !== priorityB) return priorityA - priorityB;
-
-      const dateA = new Date(a.start_date || a.created_at || 0).getTime();
-      const dateB = new Date(b.start_date || b.created_at || 0).getTime();
-      return dateB - dateA;
+      return priorityA - priorityB;
     });
   }, [elections]);
 
-  // Date Formatter Helper
-  const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    try {
-      const d = new Date(dateString);
-      if (isNaN(d.getTime())) return String(dateString);
-      return d.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } catch {
-      return String(dateString);
-    }
-  };
-
-  // Status Badge Helper
-  const renderStatusBadge = (rawStatus) => {
-    const status = (rawStatus || "DRAFT").toUpperCase();
-    switch (status) {
-      case "ACTIVE":
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            Active
-          </span>
-        );
-      case "UPCOMING":
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-            <Clock size={12} className="text-blue-500" />
-            Upcoming
-          </span>
-        );
-      case "CLOSED":
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200">
-            <CheckCircle2 size={12} className="text-gray-500" />
-            Closed
-          </span>
-        );
-      case "RESULT_PUBLISHED":
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
-            <BarChart3 size={12} className="text-purple-600" />
-            Result Published
-          </span>
-        );
-      case "DRAFT":
-      default:
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-            <FileText size={12} className="text-amber-600" />
-            Draft
-          </span>
-        );
-    }
-  };
+  const isLoading = loadingProfile || loadingStudents || loadingElections;
 
   return (
     <AdminLayout>
-      <div className="space-y-8 pb-10">
-        {/* Header Section */}
+      <div className="space-y-6">
+        {/* Top Header Banner */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200 uppercase tracking-wider">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-100 uppercase tracking-wider">
                 <ShieldCheck size={12} /> Admin Dashboard
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight mt-1.5">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-gray-900 tracking-tight">
               Welcome back,{" "}
               <span className="text-blue-600">
-                {adminProfile?.full_name || user?.name || user?.email?.split("@")[0] || "Administrator"}
+                {adminProfile?.full_name || user?.name || "Administrator"}
               </span>
             </h1>
-            <p className="text-sm text-gray-500 mt-0.5">
-              Here is what is happening with your assigned class and campus elections today.
+            <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+              Monitor active elections, student voters, and candidate nominations in your class.
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={handleRefreshAll}
-            disabled={isRefreshing || loadingProfile || loadingStudents || loadingElections}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-300 bg-white text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 transition shadow-xs disabled:opacity-50 self-start sm:self-auto cursor-pointer"
-            title="Refresh dashboard data"
-          >
-            <RefreshCw
-              size={16}
-              className={isRefreshing ? "animate-spin text-blue-600" : "text-gray-500"}
-            />
-            <span>{isRefreshing ? "Refreshing..." : "Refresh"}</span>
-          </button>
+          <div className="flex items-center gap-2.5 shrink-0">
+            <button
+              type="button"
+              onClick={handleRefreshAll}
+              disabled={isRefreshing || isLoading}
+              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 active:scale-98 transition shadow-2xs disabled:opacity-50 cursor-pointer"
+            >
+              <RefreshCw
+                size={16}
+                className={isRefreshing ? "animate-spin text-blue-600" : "text-gray-500"}
+              />
+              <span>{isRefreshing ? "Refreshing..." : "Refresh"}</span>
+            </button>
+
+            <Link
+              to="/admin/elections"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-xs sm:text-sm font-bold text-white shadow-xs shadow-blue-500/20 active:scale-98 transition"
+            >
+              <PlusCircle size={16} />
+              <span>Create Election</span>
+            </Link>
+          </div>
         </div>
 
-        {/* 1. ADMIN PROFILE & CLASS SCOPE CARD */}
-        <section aria-labelledby="admin-profile-heading">
-          {profileError ? (
-            <Alert
-              type="error"
-              message={profileError}
-              onDismiss={() => setProfileError(null)}
-            />
-          ) : loadingProfile ? (
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-xs p-6 animate-pulse">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-full bg-gray-200" />
-                <div className="space-y-2 flex-1">
-                  <div className="h-4 bg-gray-200 rounded w-1/4" />
-                  <div className="h-3 bg-gray-200 rounded w-1/3" />
-                </div>
+        {/* Errors if any */}
+        {profileError && <Alert type="error" message={profileError} onDismiss={() => setProfileError(null)} />}
+        {studentsError && <Alert type="error" message={studentsError} onDismiss={() => setStudentsError(null)} />}
+        {electionsError && <Alert type="error" message={electionsError} onDismiss={() => setElectionsError(null)} />}
+
+        {/* Assigned Scope Banner */}
+        <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 rounded-2xl sm:rounded-3xl p-5 sm:p-6 text-white shadow-lg shadow-blue-950/20 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md text-blue-300 flex items-center justify-center border border-white/20 shrink-0 shadow-xs">
+                <GraduationCap size={24} />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-gray-100">
-                <div className="h-10 bg-gray-100 rounded-xl" />
-                <div className="h-10 bg-gray-100 rounded-xl" />
-                <div className="h-10 bg-gray-100 rounded-xl" />
-              </div>
-            </div>
-          ) : (
-            <div className="bg-gradient-to-br from-white to-blue-50/30 rounded-2xl border border-blue-100 shadow-xs p-5 sm:p-6">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
-                {/* Profile Avatar & Info */}
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-blue-600 text-white font-bold flex items-center justify-center text-xl shrink-0 shadow-md shadow-blue-500/20 uppercase">
-                    {(adminProfile?.full_name || user?.email || "A").charAt(0)}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h2
-                        id="admin-profile-heading"
-                        className="text-lg font-bold text-gray-900"
-                      >
-                        {adminProfile?.full_name || "Administrator"}
-                      </h2>
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-100 text-blue-800 uppercase tracking-wide">
-                        {adminProfile?.role || user?.role || "ADMIN"}
-                      </span>
-                    </div>
-                    <p className="text-xs sm:text-sm text-gray-500 flex items-center gap-1.5 mt-0.5">
-                      <Mail size={14} className="text-gray-400" />
-                      <span>{adminProfile?.email || user?.email || "Not specified"}</span>
-                    </p>
-                  </div>
-                </div>
-
-                {/* Assigned Department / Year / Section Badges */}
-                <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs bg-white/80 backdrop-blur-xs p-3 rounded-xl border border-gray-200/80">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-50 text-gray-700 font-medium border border-gray-200">
-                    <Building2 size={14} className="text-blue-600" />
-                    <span>Department:</span>
-                    <strong className="text-gray-900 font-bold">
-                      {adminProfile?.department_id !== undefined && adminProfile?.department_id !== null
-                        ? `ID #${adminProfile.department_id}`
-                        : "N/A"}
-                    </strong>
-                  </div>
-
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-50 text-gray-700 font-medium border border-gray-200">
-                    <Calendar size={14} className="text-emerald-600" />
-                    <span>Year:</span>
-                    <strong className="text-gray-900 font-bold">
-                      {adminProfile?.year_id !== undefined && adminProfile?.year_id !== null
-                        ? `ID #${adminProfile.year_id}`
-                        : "N/A"}
-                    </strong>
-                  </div>
-
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-50 text-gray-700 font-medium border border-gray-200">
-                    <Layers size={14} className="text-purple-600" />
-                    <span>Section:</span>
-                    <strong className="text-gray-900 font-bold">
-                      {adminProfile?.section_id !== undefined && adminProfile?.section_id !== null
-                        ? `ID #${adminProfile.section_id}`
-                        : "N/A"}
-                    </strong>
-                  </div>
-                </div>
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-blue-300">
+                  Assigned Administrative Scope
+                </span>
+                <h2 className="text-base sm:text-lg font-bold text-white">
+                  {adminProfile?.full_name ? `${adminProfile.full_name}'s Class Roster` : "Department Class Scope"}
+                </h2>
+                <p className="text-xs text-blue-200 mt-0.5">
+                  Assigned to oversee class elections, voter registration, and candidates.
+                </p>
               </div>
             </div>
-          )}
-        </section>
 
-        {/* 2. QUICK ACTIONS SECTION */}
-        <section aria-labelledby="quick-actions-heading">
-          <div className="flex items-center justify-between mb-3">
-            <h2
-              id="quick-actions-heading"
-              className="text-xs font-bold uppercase tracking-wider text-gray-500"
-            >
-              Quick Navigation & Actions
-            </h2>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
+              <div className="bg-white/10 backdrop-blur-md rounded-xl px-3 py-1.5 border border-white/15 flex items-center gap-2">
+                <Building2 size={13} className="text-blue-300" />
+                <span>Dept ID:</span>
+                <strong className="text-white font-mono">
+                  {adminProfile?.department_id ?? (loadingProfile ? "..." : "N/A")}
+                </strong>
+              </div>
+
+              <div className="bg-white/10 backdrop-blur-md rounded-xl px-3 py-1.5 border border-white/15 flex items-center gap-2">
+                <Calendar size={13} className="text-blue-300" />
+                <span>Year ID:</span>
+                <strong className="text-white font-mono">
+                  {adminProfile?.year_id ?? (loadingProfile ? "..." : "N/A")}
+                </strong>
+              </div>
+
+              <div className="bg-white/10 backdrop-blur-md rounded-xl px-3 py-1.5 border border-white/15 flex items-center gap-2">
+                <Layers size={13} className="text-blue-300" />
+                <span>Section ID:</span>
+                <strong className="text-white font-mono">
+                  {adminProfile?.section_id ?? (loadingProfile ? "..." : "N/A")}
+                </strong>
+              </div>
+            </div>
           </div>
+        </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Manage Students Action */}
-            <Link
-              to="/admin/students"
-              className="group p-4 bg-white hover:bg-blue-50/50 rounded-2xl border border-gray-200 hover:border-blue-300 transition-all shadow-xs hover:shadow-sm flex items-center justify-between"
-            >
-              <div className="flex items-center gap-3.5">
-                <div className="w-11 h-11 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center group-hover:scale-105 group-hover:bg-blue-600 group-hover:text-white transition">
-                  <Users size={20} />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-gray-900 group-hover:text-blue-700 transition">
-                    Manage Students
-                  </h3>
-                  <p className="text-xs text-gray-500">
-                    View class roster & register students
-                  </p>
-                </div>
+        {/* Key Metrics Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+          <StatCard
+            title="Total Students"
+            value={loadingStudents ? "..." : studentStats.total}
+            icon={<Users size={22} />}
+            description="Enrolled in assigned class"
+          />
+          <StatCard
+            title="Active Voters"
+            value={loadingStudents ? "..." : studentStats.active}
+            icon={<UserCheck size={22} className="text-emerald-600" />}
+            description="Verified student voters"
+          />
+          <StatCard
+            title="Live Elections"
+            value={loadingElections ? "..." : electionStats.active}
+            icon={<Vote size={22} className="text-green-600" />}
+            description="Currently accepting votes"
+          />
+          <StatCard
+            title="Published Results"
+            value={loadingElections ? "..." : electionStats.resultPublished}
+            icon={<Trophy size={22} className="text-purple-600" />}
+            description="Final election outcomes"
+          />
+        </div>
+
+        {/* Elections Overview Section */}
+        <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200/80 shadow-2xs overflow-hidden">
+          <div className="px-5 sm:px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-100/60 shadow-2xs">
+                <Vote size={18} />
               </div>
-              <ChevronRight
-                size={18}
-                className="text-gray-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition"
-              />
-            </Link>
+              <div>
+                <h3 className="text-base font-extrabold text-gray-900 tracking-tight">
+                  Recent Elections & Status
+                </h3>
+                <p className="text-xs text-gray-500">
+                  Overview of college and departmental election events
+                </p>
+              </div>
+            </div>
 
-            {/* Manage Elections Action */}
             <Link
               to="/admin/elections"
-              className="group p-4 bg-white hover:bg-purple-50/50 rounded-2xl border border-gray-200 hover:border-purple-300 transition-all shadow-xs hover:shadow-sm flex items-center justify-between"
+              className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-blue-600 hover:text-blue-800 transition"
             >
-              <div className="flex items-center gap-3.5">
-                <div className="w-11 h-11 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center group-hover:scale-105 group-hover:bg-purple-600 group-hover:text-white transition">
-                  <Vote size={20} />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-gray-900 group-hover:text-purple-700 transition">
-                    Manage Elections
-                  </h3>
-                  <p className="text-xs text-gray-500">
-                    Oversee elections & candidate lists
-                  </p>
-                </div>
-              </div>
-              <ChevronRight
-                size={18}
-                className="text-gray-400 group-hover:text-purple-600 group-hover:translate-x-0.5 transition"
-              />
-            </Link>
-
-            {/* Admin Profile Action */}
-            <Link
-              to="/admin/profile"
-              className="group p-4 bg-white hover:bg-gray-100/70 rounded-2xl border border-gray-200 hover:border-gray-300 transition-all shadow-xs hover:shadow-sm flex items-center justify-between sm:col-span-2 lg:col-span-1"
-            >
-              <div className="flex items-center gap-3.5">
-                <div className="w-11 h-11 rounded-xl bg-gray-100 text-gray-700 flex items-center justify-center group-hover:scale-105 group-hover:bg-gray-800 group-hover:text-white transition">
-                  <ShieldCheck size={20} />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-gray-900 group-hover:text-gray-800 transition">
-                    My Account Profile
-                  </h3>
-                  <p className="text-xs text-gray-500">
-                    View administrator account credentials
-                  </p>
-                </div>
-              </div>
-              <ChevronRight
-                size={18}
-                className="text-gray-400 group-hover:text-gray-800 group-hover:translate-x-0.5 transition"
-              />
-            </Link>
-          </div>
-        </section>
-
-        {/* 3. STUDENT STATISTICS */}
-        <section aria-labelledby="student-stats-heading">
-          <div className="flex items-center justify-between mb-3">
-            <h2
-              id="student-stats-heading"
-              className="text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-2"
-            >
-              <GraduationCap size={16} className="text-blue-600" />
-              Class Student Statistics
-            </h2>
-            <Link
-              to="/admin/students"
-              className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1"
-            >
-              <span>View Roster</span>
-              <ArrowRight size={13} />
+              <span>View All Elections</span>
+              <ChevronRight size={16} />
             </Link>
           </div>
 
-          {studentsError ? (
-            <Alert
-              type="error"
-              message={studentsError}
-              onDismiss={() => setStudentsError(null)}
-            />
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <StatCard
-                title="Total Students"
-                value={loadingStudents ? "..." : studentStats.total}
-                icon={<Users size={22} className="text-blue-600" />}
-              />
-              <StatCard
-                title="Active Students"
-                value={loadingStudents ? "..." : studentStats.active}
-                icon={<UserCheck size={22} className="text-emerald-600" />}
-              />
-              <StatCard
-                title="Inactive Students"
-                value={loadingStudents ? "..." : studentStats.inactive}
-                icon={<UserX size={22} className="text-amber-600" />}
+          {loadingElections ? (
+            <div className="p-12 text-center">
+              <div className="w-10 h-10 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+              <p className="text-xs sm:text-sm font-medium text-gray-500">Loading elections overview...</p>
+            </div>
+          ) : recentElections.length === 0 ? (
+            <div className="p-8 sm:p-12">
+              <EmptyState
+                icon={<Vote size={32} />}
+                title="No elections created yet"
+                message="Create your first departmental election to start accepting candidate nominations and votes."
+                action={
+                  <Link
+                    to="/admin/elections"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-xs sm:text-sm font-bold shadow-xs hover:bg-blue-700 transition"
+                  >
+                    <PlusCircle size={16} />
+                    <span>Create New Election</span>
+                  </Link>
+                }
               />
             </div>
-          )}
-        </section>
-
-        {/* 4. ELECTION OVERVIEW */}
-        <section aria-labelledby="election-overview-heading">
-          <div className="flex items-center justify-between mb-3">
-            <h2
-              id="election-overview-heading"
-              className="text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-2"
-            >
-              <Vote size={16} className="text-purple-600" />
-              Election Overview
-            </h2>
-          </div>
-
-          {electionsError ? (
-            <Alert
-              type="error"
-              message={electionsError}
-              onDismiss={() => setElectionsError(null)}
-            />
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              {/* Total */}
-              <div className="bg-white rounded-2xl border border-gray-200 shadow-xs p-4 text-center">
-                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">
-                  Total
-                </span>
-                <p className="text-2xl font-bold text-gray-900 mt-1">
-                  {loadingElections ? "..." : electionStats.total}
-                </p>
-              </div>
-
-              {/* Draft */}
-              <div className="bg-white rounded-2xl border border-gray-200 shadow-xs p-4 text-center">
-                <span className="text-[11px] font-bold text-amber-600 uppercase tracking-wider block">
-                  Draft
-                </span>
-                <p className="text-2xl font-bold text-gray-900 mt-1">
-                  {loadingElections ? "..." : electionStats.draft}
-                </p>
-              </div>
-
-              {/* Upcoming */}
-              <div className="bg-white rounded-2xl border border-gray-200 shadow-xs p-4 text-center">
-                <span className="text-[11px] font-bold text-blue-600 uppercase tracking-wider block">
-                  Upcoming
-                </span>
-                <p className="text-2xl font-bold text-gray-900 mt-1">
-                  {loadingElections ? "..." : electionStats.upcoming}
-                </p>
-              </div>
-
-              {/* Active */}
-              <div className="bg-white rounded-2xl border border-emerald-200 bg-emerald-50/20 shadow-xs p-4 text-center">
-                <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider block">
-                  Active
-                </span>
-                <p className="text-2xl font-bold text-emerald-700 mt-1">
-                  {loadingElections ? "..." : electionStats.active}
-                </p>
-              </div>
-
-              {/* Closed */}
-              <div className="bg-white rounded-2xl border border-gray-200 shadow-xs p-4 text-center">
-                <span className="text-[11px] font-bold text-gray-600 uppercase tracking-wider block">
-                  Closed
-                </span>
-                <p className="text-2xl font-bold text-gray-900 mt-1">
-                  {loadingElections ? "..." : electionStats.closed}
-                </p>
-              </div>
-
-              {/* Result Published */}
-              <div className="bg-white rounded-2xl border border-purple-200 bg-purple-50/20 shadow-xs p-4 text-center">
-                <span className="text-[11px] font-bold text-purple-700 uppercase tracking-wider block truncate">
-                  Published
-                </span>
-                <p className="text-2xl font-bold text-purple-700 mt-1">
-                  {loadingElections ? "..." : electionStats.resultPublished}
-                </p>
-              </div>
-            </div>
-          )}
-        </section>
-
-        {/* 5. RECENT / UPCOMING ELECTIONS LIST */}
-        <section aria-labelledby="recent-elections-heading">
-          <div className="flex items-center justify-between mb-3">
-            <h2
-              id="recent-elections-heading"
-              className="text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-2"
-            >
-              <Clock size={16} className="text-blue-600" />
-              Available Campus Elections
-            </h2>
-            <Link
-              to="/admin/elections"
-              className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1"
-            >
-              <span>View All</span>
-              <ArrowRight size={13} />
-            </Link>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
-            {loadingElections ? (
-              <div className="p-8 text-center space-y-3">
-                <div className="inline-flex p-3 rounded-full bg-blue-50 text-blue-600 animate-spin">
-                  <RefreshCw size={22} />
-                </div>
-                <p className="text-sm font-medium text-gray-500">
-                  Loading election records...
-                </p>
-              </div>
-            ) : recentElections.length === 0 ? (
-              <div className="p-8 sm:p-10">
-                <EmptyState
-                  icon={<Vote size={32} />}
-                  title="No elections available"
-                  message="There are currently no elections created in the system."
-                />
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-gray-200 bg-gray-50/75 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-                      <th scope="col" className="py-3.5 px-4 sm:px-6">
-                        Election Title
-                      </th>
-                      <th scope="col" className="py-3.5 px-4 sm:px-6">
-                        Start Date
-                      </th>
-                      <th scope="col" className="py-3.5 px-4 sm:px-6">
-                        End Date
-                      </th>
-                      <th scope="col" className="py-3.5 px-4 sm:px-6 text-right sm:text-left">
-                        Status
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100 text-sm">
-                    {recentElections.slice(0, 5).map((election) => (
-                      <tr
-                        key={election.id}
-                        className="hover:bg-gray-50/80 transition-colors"
-                      >
-                        {/* Title & Description */}
-                        <td className="py-4 px-4 sm:px-6">
-                          <div>
-                            <p className="font-semibold text-gray-900">
-                              {election.title}
-                            </p>
-                            {election.description && (
-                              <p className="text-xs text-gray-500 line-clamp-1 mt-0.5 max-w-md">
-                                {election.description}
-                              </p>
-                            )}
+            <div className="overflow-x-auto table-container">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-slate-50/75 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="py-3.5 px-4 sm:px-6">Election Title</th>
+                    <th scope="col" className="py-3.5 px-4 sm:px-6">Status</th>
+                    <th scope="col" className="py-3.5 px-4 sm:px-6 hidden md:table-cell">Start Date</th>
+                    <th scope="col" className="py-3.5 px-4 sm:px-6 hidden md:table-cell">End Date</th>
+                    <th scope="col" className="py-3.5 px-4 sm:px-6 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 text-xs sm:text-sm">
+                  {recentElections.slice(0, 5).map((el) => (
+                    <tr key={el.id} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="py-4 px-4 sm:px-6 font-bold text-gray-900">
+                        <div className="max-w-xs truncate">{el.title}</div>
+                        {el.description && (
+                          <div className="text-xs text-gray-400 font-normal truncate max-w-xs mt-0.5">
+                            {el.description}
                           </div>
-                        </td>
+                        )}
+                      </td>
+                      <td className="py-4 px-4 sm:px-6">
+                        <ElectionStatusBadge status={el.status} />
+                      </td>
+                      <td className="py-4 px-4 sm:px-6 text-gray-600 hidden md:table-cell">
+                        {el.start_date ? new Date(el.start_date).toLocaleDateString() : "—"}
+                      </td>
+                      <td className="py-4 px-4 sm:px-6 text-gray-600 hidden md:table-cell">
+                        {el.end_date ? new Date(el.end_date).toLocaleDateString() : "—"}
+                      </td>
+                      <td className="py-4 px-4 sm:px-6 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {el.status === "RESULT_PUBLISHED" ? (
+                            <Link
+                              to={`/admin/results/${el.id}`}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs transition"
+                            >
+                              <Trophy size={13} />
+                              <span>Results</span>
+                            </Link>
+                          ) : (
+                            <Link
+                              to="/admin/elections"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs transition"
+                            >
+                              <span>Manage</span>
+                              <ArrowRight size={13} />
+                            </Link>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
 
-                        {/* Start Date */}
-                        <td className="py-4 px-4 sm:px-6 text-xs text-gray-600 whitespace-nowrap">
-                          {formatDate(election.start_date)}
-                        </td>
-
-                        {/* End Date */}
-                        <td className="py-4 px-4 sm:px-6 text-xs text-gray-600 whitespace-nowrap">
-                          {formatDate(election.end_date)}
-                        </td>
-
-                        {/* Status */}
-                        <td className="py-4 px-4 sm:px-6 text-right sm:text-left whitespace-nowrap">
-                          {renderStatusBadge(election.status)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-
-                {/* Table Footer */}
-                {recentElections.length > 5 && (
-                  <div className="p-3 bg-gray-50 border-t border-gray-100 text-center">
-                    <Link
-                      to="/admin/elections"
-                      className="text-xs font-bold text-blue-600 hover:text-blue-800"
-                    >
-                      Showing top 5 of {recentElections.length} elections — View All →
-                    </Link>
-                  </div>
-                )}
+        {/* Quick Links / Actions */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Link
+            to="/admin/students"
+            className="p-5 rounded-2xl sm:rounded-3xl bg-white border border-gray-200/80 shadow-2xs hover:border-blue-300 hover:shadow-sm transition-all flex items-center justify-between group"
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100/60 shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+                <Users size={22} />
               </div>
-            )}
-          </div>
-        </section>
+              <div>
+                <h4 className="font-bold text-gray-900 text-sm sm:text-base">
+                  Student Management
+                </h4>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Add, search, and verify class students roster
+                </p>
+              </div>
+            </div>
+            <ChevronRight size={18} className="text-gray-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+          </Link>
+
+          <Link
+            to="/admin/profile"
+            className="p-5 rounded-2xl sm:rounded-3xl bg-white border border-gray-200/80 shadow-2xs hover:border-blue-300 hover:shadow-sm transition-all flex items-center justify-between group"
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100/60 shadow-2xs group-hover:scale-105 transition-transform shrink-0">
+                <ShieldCheck size={22} />
+              </div>
+              <div>
+                <h4 className="font-bold text-gray-900 text-sm sm:text-base">
+                  Profile & Security
+                </h4>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Update admin credentials and password
+                </p>
+              </div>
+            </div>
+            <ChevronRight size={18} className="text-gray-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+          </Link>
+        </div>
       </div>
     </AdminLayout>
   );
