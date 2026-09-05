@@ -30,11 +30,38 @@ import ConfirmVote from "./pages/student/ConfirmVote";
 import Results from "./pages/student/Results";
 
 function Unauthorized() {
+  const storedUser = localStorage.getItem("user");
+  let dashboardPath = "/login";
+  if (storedUser) {
+    try {
+      const parsed = JSON.parse(storedUser);
+      if (parsed.role === "ADMIN") dashboardPath = "/admin";
+      else if (parsed.role === "SUPER_ADMIN") dashboardPath = "/superadmin";
+      else if (parsed.role === "STUDENT") dashboardPath = "/student";
+    } catch {
+      // ignore
+    }
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <h1 className="text-2xl font-bold">
-        403 - Unauthorized
-      </h1>
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-8 max-w-md w-full text-center space-y-4">
+        <div className="w-16 h-16 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mx-auto border border-red-100">
+          <span className="text-2xl font-black">403</span>
+        </div>
+        <h1 className="text-xl font-extrabold text-gray-900">
+          Access Prohibited
+        </h1>
+        <p className="text-xs text-gray-500 leading-relaxed">
+          You do not have administrative permission to access this restricted route or scope.
+        </p>
+        <a
+          href={dashboardPath}
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition"
+        >
+          Return to Your Dashboard
+        </a>
+      </div>
     </div>
   );
 }

@@ -24,6 +24,10 @@ import {
   StopCircle,
   Share2,
   ArrowRight,
+  ShieldCheck,
+  Calendar,
+  Trophy,
+  ExternalLink,
 } from "lucide-react";
 import AdminLayout from "../../components/admin/AdminLayout";
 import StatCard from "../../components/common/StatCard";
@@ -257,36 +261,36 @@ export default function ElectionManagement() {
     switch (status) {
       case "ACTIVE":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            Active Voting
+            Live Voting
           </span>
         );
       case "UPCOMING":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
             <Clock size={12} className="text-blue-500" />
             Upcoming
           </span>
         );
       case "CLOSED":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700 border border-gray-200">
             <CheckCircle2 size={12} className="text-gray-500" />
             Voting Closed
           </span>
         );
       case "RESULT_PUBLISHED":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
-            <BarChart3 size={12} className="text-purple-600" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200">
+            <Trophy size={12} className="text-purple-600" />
             Results Published
           </span>
         );
       case "DRAFT":
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
             <FileText size={12} className="text-amber-600" />
             Draft
           </span>
@@ -691,21 +695,21 @@ export default function ElectionManagement() {
     switch (status) {
       case "DRAFT":
         return [
-          { status: "UPCOMING", label: "Schedule Poll (Upcoming)", icon: Clock, color: "text-blue-600 bg-blue-50 hover:bg-blue-100" },
-          { status: "ACTIVE", label: "Start Voting Now (Active)", icon: PlayCircle, color: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100" },
+          { status: "UPCOMING", label: "Schedule (Upcoming)", icon: Clock, color: "text-blue-600 bg-blue-50 hover:bg-blue-100 border-blue-200" },
+          { status: "ACTIVE", label: "Start Polls (Active)", icon: PlayCircle, color: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border-emerald-200" },
         ];
       case "UPCOMING":
         return [
-          { status: "DRAFT", label: "Revert to Draft", icon: FileText, color: "text-amber-600 bg-amber-50 hover:bg-amber-100" },
-          { status: "ACTIVE", label: "Open Polls (Active)", icon: PlayCircle, color: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100" },
+          { status: "DRAFT", label: "Revert to Draft", icon: FileText, color: "text-amber-600 bg-amber-50 hover:bg-amber-100 border-amber-200" },
+          { status: "ACTIVE", label: "Open Polls (Active)", icon: PlayCircle, color: "text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border-emerald-200" },
         ];
       case "ACTIVE":
         return [
-          { status: "CLOSED", label: "Close Polling (Closed)", icon: StopCircle, color: "text-red-600 bg-red-50 hover:bg-red-100" },
+          { status: "CLOSED", label: "Close Polling (Closed)", icon: StopCircle, color: "text-red-600 bg-red-50 hover:bg-red-100 border-red-200" },
         ];
       case "CLOSED":
         return [
-          { status: "RESULT_PUBLISHED", label: "Publish Official Results", icon: Share2, color: "text-purple-600 bg-purple-50 hover:bg-purple-100" },
+          { status: "RESULT_PUBLISHED", label: "Publish Official Results", icon: Share2, color: "text-purple-600 bg-purple-50 hover:bg-purple-100 border-purple-200" },
         ];
       case "RESULT_PUBLISHED":
       default:
@@ -719,31 +723,30 @@ export default function ElectionManagement() {
         {/* Header Section */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-800 border border-purple-200 uppercase tracking-wider">
-                <Building2 size={13} className="text-purple-600" />
-                {adminProfile?.department_name || "Department"} Portal
+            <div className="flex items-center gap-2 mb-1">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-100 uppercase tracking-wider">
+                <Vote size={12} /> Department Elections
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight mt-1.5">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-gray-900 tracking-tight">
               Election Management
             </h1>
-            <p className="text-sm text-gray-500 mt-0.5">
-              Manage department elections, candidate nominations, voter rosters, polling statuses, and certified results.
+            <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+              Create and manage department elections, positions, candidates, and voter rolls.
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 shrink-0">
             <button
               type="button"
               onClick={() => loadData(false)}
               disabled={refreshing || loading}
-              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 transition shadow-2xs disabled:opacity-50 cursor-pointer"
+              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 active:scale-98 transition shadow-2xs disabled:opacity-50 cursor-pointer"
               title="Refresh elections list"
             >
               <RefreshCw
                 size={16}
-                className={refreshing ? "animate-spin text-purple-600" : "text-gray-500"}
+                className={refreshing ? "animate-spin text-blue-600" : "text-gray-500"}
               />
               <span>{refreshing ? "Refreshing..." : "Refresh"}</span>
             </button>
@@ -751,7 +754,7 @@ export default function ElectionManagement() {
             <button
               type="button"
               onClick={handleOpenCreateModal}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-xs sm:text-sm font-semibold text-white transition shadow-sm hover:shadow cursor-pointer"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-xs sm:text-sm font-bold text-white shadow-xs shadow-blue-500/20 active:scale-98 transition cursor-pointer"
             >
               <Plus size={16} />
               <span>Create Election</span>
@@ -773,7 +776,7 @@ export default function ElectionManagement() {
           <StatCard
             title="Total Elections"
             value={loading ? "..." : stats.total}
-            icon={<Vote size={22} className="text-purple-600" />}
+            icon={<Vote size={22} className="text-blue-600" />}
           />
           <StatCard
             title="Active Polls"
@@ -793,25 +796,25 @@ export default function ElectionManagement() {
         </div>
 
         {/* Search & Filter Bar */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-2xs p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200/80 shadow-2xs p-3.5 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           {/* Search Box */}
           <div className="relative w-full sm:max-w-md">
             <Search
-              size={18}
+              size={17}
               className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
             />
             <input
               type="text"
-              placeholder="Search by title, description or election ID..."
+              placeholder="Search by title, description or ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-9 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
+              className="w-full pl-10 pr-9 py-2.5 bg-slate-50/70 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition shadow-2xs"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5 rounded-full"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5 rounded-full cursor-pointer"
                 aria-label="Clear search"
               >
                 <X size={14} />
@@ -821,17 +824,17 @@ export default function ElectionManagement() {
 
           {/* Status Filter */}
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-            <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5">
-              <Filter size={14} className="text-gray-500" />
-              <span className="text-xs font-medium text-gray-500">Status:</span>
+            <div className="flex items-center gap-2 bg-slate-50/80 border border-gray-200/80 rounded-xl px-3 py-2 w-full sm:w-auto shadow-2xs">
+              <Filter size={14} className="text-gray-500 shrink-0" />
+              <span className="text-xs font-semibold text-gray-500">Status:</span>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-transparent text-xs font-semibold text-gray-800 focus:outline-none cursor-pointer"
+                className="bg-transparent text-xs font-bold text-gray-800 focus:outline-none cursor-pointer w-full sm:w-auto"
               >
                 <option value="ALL">All Statuses</option>
-                <option value="ACTIVE">Active</option>
-                <option value="UPCOMING">Upcoming</option>
+                <option value="ACTIVE">Active Polls</option>
+                <option value="UPCOMING">Upcoming Polls</option>
                 <option value="DRAFT">Draft</option>
                 <option value="CLOSED">Closed</option>
                 <option value="RESULT_PUBLISHED">Result Published</option>
@@ -843,16 +846,14 @@ export default function ElectionManagement() {
         {/* Elections Grid */}
         <div>
           {loading ? (
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-2xs p-12 text-center space-y-4">
-              <div className="inline-flex p-3 rounded-full bg-purple-50 text-purple-600 animate-spin">
-                <RefreshCw size={24} />
-              </div>
-              <p className="text-sm font-medium text-gray-600">
+            <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 shadow-2xs p-12 text-center space-y-4">
+              <div className="w-10 h-10 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-xs sm:text-sm font-medium text-gray-500">
                 Loading elections...
               </p>
             </div>
           ) : elections.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-2xs p-12">
+            <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 shadow-2xs p-12">
               <EmptyState
                 icon={<Vote size={36} />}
                 title="No elections available"
@@ -861,7 +862,7 @@ export default function ElectionManagement() {
                   <button
                     type="button"
                     onClick={handleOpenCreateModal}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-xs transition cursor-pointer"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-xs transition cursor-pointer"
                   >
                     <Plus size={16} />
                     <span>Create First Election</span>
@@ -870,7 +871,7 @@ export default function ElectionManagement() {
               />
             </div>
           ) : filteredElections.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-2xs p-12">
+            <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 shadow-2xs p-12">
               <EmptyState
                 icon={<Search size={36} />}
                 title="No matching elections found"
@@ -897,12 +898,12 @@ export default function ElectionManagement() {
                 return (
                   <div
                     key={election.id}
-                    className="bg-white rounded-2xl border border-gray-200 hover:border-purple-300 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between overflow-hidden group"
+                    className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 hover:border-blue-300 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between overflow-hidden group"
                   >
                     <div className="p-5 sm:p-6 space-y-4">
                       {/* Top Meta Bar */}
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-mono text-[11px] font-semibold text-gray-500 bg-gray-100 px-2.5 py-0.5 rounded-md border border-gray-200">
+                        <span className="font-mono text-[11px] font-bold text-gray-600 bg-slate-100 px-2.5 py-0.5 rounded-lg border border-gray-200 shadow-2xs">
                           ELECTION #{election.id}
                         </span>
                         {renderStatusBadge(election.status)}
@@ -910,7 +911,7 @@ export default function ElectionManagement() {
 
                       {/* Title & Description */}
                       <div>
-                        <h3 className="text-base font-bold text-gray-900 group-hover:text-purple-700 transition line-clamp-2">
+                        <h3 className="text-base font-extrabold text-gray-900 group-hover:text-blue-600 transition line-clamp-2 leading-snug">
                           {election.title}
                         </h3>
                         <p className="text-xs text-gray-500 mt-1 line-clamp-2 leading-relaxed">
@@ -919,7 +920,7 @@ export default function ElectionManagement() {
                       </div>
 
                       {/* Schedule Timing Box */}
-                      <div className="bg-gray-50/90 rounded-xl p-3 border border-gray-100 space-y-2 text-xs">
+                      <div className="bg-slate-50/80 rounded-xl p-3 border border-gray-100 space-y-1.5 text-xs">
                         <div className="flex items-center justify-between text-gray-600">
                           <span className="text-gray-400 font-medium">Starts:</span>
                           <span className="font-semibold text-gray-800">
@@ -938,7 +939,7 @@ export default function ElectionManagement() {
                       {nextOptions.length > 0 && (
                         <div className="pt-1">
                           <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block mb-1.5">
-                            Status Actions:
+                            Status Controls:
                           </span>
                           <div className="flex flex-wrap gap-1.5">
                             {nextOptions.map((opt) => {
@@ -948,7 +949,7 @@ export default function ElectionManagement() {
                                   key={opt.status}
                                   type="button"
                                   onClick={(e) => handleRequestStatusChange(election, opt.status, e)}
-                                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition border border-gray-200/80 cursor-pointer ${opt.color}`}
+                                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition border cursor-pointer ${opt.color}`}
                                 >
                                   <OptIcon size={13} />
                                   <span>{opt.label}</span>
@@ -961,24 +962,24 @@ export default function ElectionManagement() {
                     </div>
 
                     {/* Card Actions Footer */}
-                    <div className="px-5 py-3.5 bg-gray-50/70 border-t border-gray-100 flex items-center justify-between gap-2">
+                    <div className="px-5 py-3.5 bg-slate-50/70 border-t border-gray-100 flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
                           onClick={() => handleOpenDetails(election)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold shadow-2xs transition cursor-pointer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-2xs transition cursor-pointer"
                         >
                           <Eye size={14} />
-                          <span>View / Manage</span>
+                          <span>View & Manage</span>
                         </button>
 
                         {(election.status === "RESULT_PUBLISHED" ||
                           election.status === "CLOSED") && (
                           <Link
-                            to={`/admin/elections/${election.id}/results`}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-white hover:bg-purple-50 text-purple-700 border border-purple-200 rounded-lg text-xs font-semibold shadow-2xs transition"
+                            to={`/admin/results/${election.id}`}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-white hover:bg-purple-50 text-purple-700 border border-purple-200 rounded-lg text-xs font-bold shadow-2xs transition"
                           >
-                            <BarChart3 size={14} />
+                            <Trophy size={14} />
                             <span>Results</span>
                           </Link>
                         )}
@@ -1008,7 +1009,8 @@ export default function ElectionManagement() {
             if (!createLoading) setIsCreateModalOpen(false);
           }}
           title="Create Department Election"
-          icon={<Vote size={24} className="text-purple-600" />}
+          subtitle="Set up title, schedule dates, and positions"
+          icon={<Vote size={24} className="text-blue-600" />}
           confirmText={createLoading ? "Creating..." : "Create Election"}
           cancelText="Cancel"
           onConfirm={handleCreateElectionSubmit}
@@ -1016,13 +1018,13 @@ export default function ElectionManagement() {
         >
           <form onSubmit={handleCreateElectionSubmit} className="space-y-4 text-left">
             {/* Scoped Department Banner */}
-            <div className="bg-purple-50/70 border border-purple-100 rounded-xl p-3 text-xs text-purple-900 space-y-1">
-              <p className="font-semibold flex items-center gap-1.5 text-purple-950">
-                <Building2 size={14} className="text-purple-700" />
-                Department Scoped Election ({adminProfile?.department_name || "Assigned Department"})
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-3.5 text-xs text-blue-900 space-y-1 shadow-2xs">
+              <p className="font-bold flex items-center gap-1.5 text-blue-950">
+                <ShieldCheck size={14} className="text-blue-700" />
+                Department Scoped Election (Dept ID #{adminProfile?.department_id || "1"})
               </p>
-              <p className="text-[11px] text-purple-800 leading-relaxed">
-                Creates an election for your department. Active students in your department will be automatically enrolled as eligible voters if enabled.
+              <p className="text-[11px] text-blue-800 leading-relaxed">
+                Creates an election for your department. Active students in your department can be auto-enrolled as eligible voters.
               </p>
             </div>
 
@@ -1043,7 +1045,7 @@ export default function ElectionManagement() {
                 onChange={(e) =>
                   setElectionForm({ ...electionForm, title: e.target.value })
                 }
-                className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-xl text-xs sm:text-sm text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
+                className="w-full px-3 py-2.5 bg-slate-50/70 border border-gray-300 rounded-xl text-xs sm:text-sm text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition shadow-2xs"
               />
             </div>
 
@@ -1063,7 +1065,7 @@ export default function ElectionManagement() {
                 onChange={(e) =>
                   setElectionForm({ ...electionForm, description: e.target.value })
                 }
-                className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-xl text-xs sm:text-sm text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition resize-none"
+                className="w-full px-3 py-2.5 bg-slate-50/70 border border-gray-300 rounded-xl text-xs sm:text-sm text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition resize-none shadow-2xs"
               />
             </div>
 
@@ -1084,7 +1086,7 @@ export default function ElectionManagement() {
                   onChange={(e) =>
                     setElectionForm({ ...electionForm, startDate: e.target.value })
                   }
-                  className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-xl text-xs sm:text-sm text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
+                  className="w-full px-3 py-2.5 bg-slate-50/70 border border-gray-300 rounded-xl text-xs sm:text-sm text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition shadow-2xs"
                 />
               </div>
 
@@ -1103,7 +1105,7 @@ export default function ElectionManagement() {
                   onChange={(e) =>
                     setElectionForm({ ...electionForm, endDate: e.target.value })
                   }
-                  className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-xl text-xs sm:text-sm text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
+                  className="w-full px-3 py-2.5 bg-slate-50/70 border border-gray-300 rounded-xl text-xs sm:text-sm text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition shadow-2xs"
                 />
               </div>
             </div>
@@ -1118,7 +1120,7 @@ export default function ElectionManagement() {
 
               {/* Position Presets */}
               <div className="space-y-1">
-                <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">
+                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
                   Quick Add Presets:
                 </span>
                 <div className="flex flex-wrap gap-1.5">
@@ -1132,10 +1134,10 @@ export default function ElectionManagement() {
                         type="button"
                         onClick={() => handleAddPresetPosition(preset)}
                         disabled={isAdded}
-                        className={`text-[11px] px-2.5 py-1 rounded-lg border font-medium transition cursor-pointer ${
+                        className={`text-[11px] px-2.5 py-1 rounded-lg border font-bold transition cursor-pointer shadow-2xs ${
                           isAdded
                             ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                            : "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100"
+                            : "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
                         }`}
                       >
                         + {preset.name}
@@ -1150,10 +1152,10 @@ export default function ElectionManagement() {
                 {positionsList.map((pos, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center justify-between gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200 text-xs"
+                    className="flex items-center justify-between gap-2 p-2 bg-slate-50 rounded-xl border border-gray-200 text-xs shadow-2xs"
                   >
                     <div className="min-w-0">
-                      <p className="font-semibold text-gray-900 truncate">
+                      <p className="font-bold text-gray-900 truncate">
                         {pos.name}
                       </p>
                       {pos.description && (
@@ -1181,12 +1183,12 @@ export default function ElectionManagement() {
                   placeholder="Custom Position Name..."
                   value={newPositionName}
                   onChange={(e) => setNewPositionName(e.target.value)}
-                  className="flex-1 px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-xs text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="flex-1 px-3 py-1.5 bg-slate-50 border border-gray-300 rounded-xl text-xs text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
                 />
                 <button
                   type="button"
                   onClick={handleAddCustomPosition}
-                  className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold transition cursor-pointer"
+                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition cursor-pointer shadow-2xs"
                 >
                   + Add
                 </button>
@@ -1205,10 +1207,10 @@ export default function ElectionManagement() {
                       autoEnrollDepartment: e.target.checked,
                     })
                   }
-                  className="mt-0.5 rounded text-purple-600 focus:ring-purple-500"
+                  className="mt-0.5 rounded text-blue-600 focus:ring-blue-500"
                 />
                 <div>
-                  <span className="text-xs font-semibold text-gray-800">
+                  <span className="text-xs font-bold text-gray-800">
                     Auto-Enroll Department Students
                   </span>
                   <p className="text-[11px] text-gray-500">
@@ -1227,7 +1229,7 @@ export default function ElectionManagement() {
             if (!statusChangeLoading) setStatusModalOpen(false);
           }}
           title="Confirm Election Status Change"
-          icon={<AlertCircle size={24} className="text-purple-600" />}
+          icon={<AlertCircle size={24} className="text-blue-600" />}
           confirmText={statusChangeLoading ? "Updating..." : `Set to ${targetStatus}`}
           cancelText="Cancel"
           onConfirm={handleConfirmStatusChange}
@@ -1239,30 +1241,30 @@ export default function ElectionManagement() {
               <strong className="text-gray-900">&ldquo;{statusTargetElection?.title}&rdquo;</strong>?
             </p>
 
-            <div className="flex items-center gap-3 bg-purple-50 border border-purple-200 rounded-xl p-3 text-xs">
+            <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs">
               <span className="font-semibold text-gray-700">
                 {statusTargetElection?.status}
               </span>
-              <ArrowRight size={14} className="text-purple-600" />
-              <span className="font-bold text-purple-800">
+              <ArrowRight size={14} className="text-blue-600" />
+              <span className="font-bold text-blue-800">
                 {targetStatus}
               </span>
             </div>
 
             {targetStatus === "ACTIVE" && (
-              <p className="text-xs text-emerald-700 bg-emerald-50 p-2.5 rounded-lg border border-emerald-200">
+              <p className="text-xs text-emerald-700 bg-emerald-50 p-2.5 rounded-xl border border-emerald-200">
                 ✓ Once ACTIVE, students can immediately begin casting votes for contested positions.
               </p>
             )}
 
             {targetStatus === "CLOSED" && (
-              <p className="text-xs text-amber-800 bg-amber-50 p-2.5 rounded-lg border border-amber-200">
+              <p className="text-xs text-amber-800 bg-amber-50 p-2.5 rounded-xl border border-amber-200">
                 ⚠️ Once CLOSED, ballot submissions will be locked and no new votes will be accepted.
               </p>
             )}
 
             {targetStatus === "RESULT_PUBLISHED" && (
-              <p className="text-xs text-purple-800 bg-purple-50 p-2.5 rounded-lg border border-purple-200">
+              <p className="text-xs text-purple-800 bg-purple-50 p-2.5 rounded-xl border border-purple-200">
                 🎉 Once PUBLISHED, verified election tallies and winner designations become visible to all students.
               </p>
             )}
@@ -1305,14 +1307,16 @@ export default function ElectionManagement() {
           isOpen={isDetailsModalOpen}
           onClose={() => setIsDetailsModalOpen(false)}
           title={selectedElection?.title || "Election Details & Management"}
-          icon={<Vote size={24} className="text-purple-600" />}
+          subtitle="Manage positions, candidate nominations, and voter rolls"
+          icon={<Vote size={24} className="text-blue-600" />}
           cancelText="Close"
+          maxWidth="max-w-2xl"
         >
           <div className="space-y-4 text-left">
             {/* Modal Header Badge & Quick Lifecycle Transitions */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-mono text-xs text-gray-500 font-semibold bg-gray-100 px-2 py-0.5 rounded">
+                <span className="font-mono text-xs text-gray-600 font-bold bg-slate-100 px-2 py-0.5 rounded-lg border border-gray-200">
                   #{selectedElection?.id}
                 </span>
                 {renderStatusBadge(selectedElection?.status)}
@@ -1332,7 +1336,7 @@ export default function ElectionManagement() {
                       key={opt.status}
                       type="button"
                       onClick={(e) => handleRequestStatusChange(selectedElection, opt.status, e)}
-                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition border border-gray-200 ${opt.color} cursor-pointer`}
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition border cursor-pointer ${opt.color}`}
                     >
                       <OptIcon size={13} />
                       <span>{opt.label}</span>
@@ -1358,7 +1362,7 @@ export default function ElectionManagement() {
                 onClick={() => setActiveTab("positions")}
                 className={`pb-2.5 px-3 text-xs font-bold transition border-b-2 whitespace-nowrap cursor-pointer ${
                   activeTab === "positions"
-                    ? "border-purple-600 text-purple-700"
+                    ? "border-blue-600 text-blue-700"
                     : "border-transparent text-gray-500 hover:text-gray-800"
                 }`}
               >
@@ -1369,7 +1373,7 @@ export default function ElectionManagement() {
                 onClick={() => setActiveTab("candidates")}
                 className={`pb-2.5 px-3 text-xs font-bold transition border-b-2 whitespace-nowrap cursor-pointer ${
                   activeTab === "candidates"
-                    ? "border-purple-600 text-purple-700"
+                    ? "border-blue-600 text-blue-700"
                     : "border-transparent text-gray-500 hover:text-gray-800"
                 }`}
               >
@@ -1380,7 +1384,7 @@ export default function ElectionManagement() {
                 onClick={() => setActiveTab("voters")}
                 className={`pb-2.5 px-3 text-xs font-bold transition border-b-2 whitespace-nowrap cursor-pointer ${
                   activeTab === "voters"
-                    ? "border-purple-600 text-purple-700"
+                    ? "border-blue-600 text-blue-700"
                     : "border-transparent text-gray-500 hover:text-gray-800"
                 }`}
               >
@@ -1391,7 +1395,7 @@ export default function ElectionManagement() {
                 onClick={() => setActiveTab("results")}
                 className={`pb-2.5 px-3 text-xs font-bold transition border-b-2 whitespace-nowrap cursor-pointer ${
                   activeTab === "results"
-                    ? "border-purple-600 text-purple-700"
+                    ? "border-blue-600 text-blue-700"
                     : "border-transparent text-gray-500 hover:text-gray-800"
                 }`}
               >
@@ -1402,8 +1406,8 @@ export default function ElectionManagement() {
             {/* Modal Tab Content */}
             {detailsLoading ? (
               <div className="py-12 text-center space-y-2">
-                <RefreshCw size={24} className="animate-spin text-purple-600 mx-auto" />
-                <p className="text-xs text-gray-500">Loading election components...</p>
+                <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
+                <p className="text-xs text-gray-500 font-medium">Loading election components...</p>
               </div>
             ) : (
               <div className="max-h-[420px] overflow-y-auto pr-1 space-y-4">
@@ -1417,7 +1421,7 @@ export default function ElectionManagement() {
                           <button
                             type="button"
                             onClick={() => setIsAddingPositionInline(true)}
-                            className="w-full py-2 px-3 border border-dashed border-purple-300 hover:border-purple-500 bg-purple-50/50 hover:bg-purple-50 text-purple-700 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer"
+                            className="w-full py-2.5 px-3 border border-dashed border-blue-300 hover:border-blue-500 bg-blue-50/50 hover:bg-blue-50 text-blue-700 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-2xs"
                           >
                             <Plus size={14} />
                             <span>Add Position to this Election</span>
@@ -1425,9 +1429,9 @@ export default function ElectionManagement() {
                         ) : (
                           <form
                             onSubmit={handleAddPositionInline}
-                            className="bg-white rounded-xl p-3.5 border border-purple-200 shadow-xs space-y-2.5"
+                            className="bg-white rounded-2xl p-3.5 border border-blue-200 shadow-xs space-y-2.5"
                           >
-                            <span className="text-xs font-bold text-purple-900 block">
+                            <span className="text-xs font-bold text-blue-900 block">
                               Add New Contested Position
                             </span>
                             <div className="space-y-2">
@@ -1437,28 +1441,28 @@ export default function ElectionManagement() {
                                 required
                                 value={inlinePosName}
                                 onChange={(e) => setInlinePosName(e.target.value)}
-                                className="w-full px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-xs text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                className="w-full px-3 py-2 bg-slate-50 border border-gray-300 rounded-xl text-xs text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                               />
                               <input
                                 type="text"
                                 placeholder="Description of role & responsibilities (Optional)"
                                 value={inlinePosDesc}
                                 onChange={(e) => setInlinePosDesc(e.target.value)}
-                                className="w-full px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-xs text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                className="w-full px-3 py-2 bg-slate-50 border border-gray-300 rounded-xl text-xs text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                               />
                             </div>
                             <div className="flex justify-end gap-2 pt-1">
                               <button
                                 type="button"
                                 onClick={() => setIsAddingPositionInline(false)}
-                                className="px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer"
+                                className="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer"
                               >
                                 Cancel
                               </button>
                               <button
                                 type="submit"
                                 disabled={addPosLoading}
-                                className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs rounded-lg transition disabled:opacity-50 cursor-pointer"
+                                className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg transition disabled:opacity-50 cursor-pointer shadow-2xs"
                               >
                                 {addPosLoading ? "Saving..." : "Save Position"}
                               </button>
@@ -1469,9 +1473,9 @@ export default function ElectionManagement() {
                     )}
 
                     {positions.length === 0 ? (
-                      <div className="text-center py-8 text-xs text-gray-500 bg-gray-50 rounded-xl border border-gray-100">
+                      <div className="text-center py-8 text-xs text-gray-500 bg-slate-50 rounded-2xl border border-gray-100">
                         <Award size={28} className="mx-auto text-gray-400 mb-1.5" />
-                        <p className="font-semibold text-gray-700">No positions configured yet.</p>
+                        <p className="font-bold text-gray-700">No positions configured yet.</p>
                         <p className="text-[11px] text-gray-400 mt-0.5">
                           Add contested positions for candidates to run for.
                         </p>
@@ -1483,11 +1487,11 @@ export default function ElectionManagement() {
                         return (
                           <div
                             key={pos.id}
-                            className="bg-gray-50 rounded-xl p-3.5 border border-gray-200 flex items-start justify-between gap-3 text-xs"
+                            className="bg-slate-50/80 rounded-2xl p-3.5 border border-gray-200 flex items-start justify-between gap-3 text-xs shadow-2xs"
                           >
                             <div className="min-w-0 flex-1 space-y-1">
                               <div className="flex items-center gap-2">
-                                <Award size={15} className="text-purple-600 shrink-0" />
+                                <Award size={15} className="text-blue-600 shrink-0" />
                                 <h4 className="font-bold text-gray-900 text-sm">{pos.name}</h4>
                               </div>
                               {pos.description && (
@@ -1495,7 +1499,7 @@ export default function ElectionManagement() {
                                   {pos.description}
                                 </p>
                               )}
-                              <p className="text-[10px] text-purple-700 font-semibold pt-0.5">
+                              <p className="text-[10px] text-blue-700 font-bold pt-0.5">
                                 {posCandidates.length} candidate(s) running
                               </p>
                             </div>
@@ -1507,7 +1511,7 @@ export default function ElectionManagement() {
                                   setActiveTab("candidates");
                                   setNominatingPositionId(pos.id);
                                 }}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition shrink-0 cursor-pointer"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition shrink-0 cursor-pointer shadow-2xs"
                               >
                                 <UserPlus size={12} />
                                 <span>Nominate</span>
@@ -1535,12 +1539,12 @@ export default function ElectionManagement() {
                         return (
                           <div
                             key={pos.id}
-                            className="bg-gray-50 rounded-xl p-3.5 border border-gray-200 space-y-3"
+                            className="bg-slate-50/80 rounded-2xl p-3.5 border border-gray-200 space-y-3 shadow-2xs"
                           >
                             <div className="flex items-center justify-between gap-2">
                               <div>
                                 <h4 className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
-                                  <Award size={14} className="text-purple-600" />
+                                  <Award size={14} className="text-blue-600" />
                                   {pos.name}
                                 </h4>
                                 {pos.description && (
@@ -1557,7 +1561,7 @@ export default function ElectionManagement() {
                                     setNominatingPositionId(isNominatingThis ? null : pos.id);
                                     setCandidateForm({ studentId: "", manifesto: "", photoUrl: "" });
                                   }}
-                                  className="text-[11px] font-semibold text-purple-700 hover:text-purple-900 bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-200 transition cursor-pointer"
+                                  className="text-[11px] font-bold text-blue-700 hover:text-blue-900 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200 transition cursor-pointer shadow-2xs"
                                 >
                                   {isNominatingThis ? "Cancel" : "+ Nominate Candidate"}
                                 </button>
@@ -1566,8 +1570,8 @@ export default function ElectionManagement() {
 
                             {/* Inline Nominate Form */}
                             {isNominatingThis && (
-                              <div className="bg-white rounded-xl p-3.5 border border-purple-200 space-y-3 shadow-2xs">
-                                <span className="text-xs font-bold text-purple-900 block">
+                              <div className="bg-white rounded-2xl p-3.5 border border-blue-200 space-y-3 shadow-xs">
+                                <span className="text-xs font-bold text-blue-900 block">
                                   Nominate Student for {pos.name}
                                 </span>
 
@@ -1583,7 +1587,7 @@ export default function ElectionManagement() {
                                         studentId: e.target.value,
                                       })
                                     }
-                                    className="w-full px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-xs text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                                    className="w-full px-3 py-2 bg-slate-50 border border-gray-300 rounded-xl text-xs text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-2xs"
                                   >
                                     <option value="">-- Choose Student from Roster --</option>
                                     {departmentStudents.map((st) => (
@@ -1608,7 +1612,7 @@ export default function ElectionManagement() {
                                         manifesto: e.target.value,
                                       })
                                     }
-                                    className="w-full px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-xs text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    className="w-full px-3 py-2 bg-slate-50 border border-gray-300 rounded-xl text-xs text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
                                   />
                                 </div>
 
@@ -1626,7 +1630,7 @@ export default function ElectionManagement() {
                                         photoUrl: e.target.value,
                                       })
                                     }
-                                    className="w-full px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-lg text-xs text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    className="w-full px-3 py-2 bg-slate-50 border border-gray-300 rounded-xl text-xs text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
                                   />
                                 </div>
 
@@ -1634,7 +1638,7 @@ export default function ElectionManagement() {
                                   <button
                                     type="button"
                                     onClick={() => setNominatingPositionId(null)}
-                                    className="px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer"
+                                    className="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer"
                                   >
                                     Cancel
                                   </button>
@@ -1642,7 +1646,7 @@ export default function ElectionManagement() {
                                     type="button"
                                     onClick={() => handleNominateCandidate(pos.id)}
                                     disabled={nominateLoading}
-                                    className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs rounded-lg transition disabled:opacity-50 cursor-pointer"
+                                    className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg transition disabled:opacity-50 cursor-pointer shadow-2xs"
                                   >
                                     {nominateLoading ? "Saving..." : "Save Candidate"}
                                   </button>
@@ -1661,23 +1665,23 @@ export default function ElectionManagement() {
                                   {posCandidates.map((cand) => (
                                     <div
                                       key={cand.id}
-                                      className="bg-white rounded-lg p-2.5 border border-gray-200 flex items-center justify-between gap-3 text-xs"
+                                      className="bg-white rounded-xl p-2.5 border border-gray-200 flex items-center justify-between gap-3 text-xs shadow-2xs"
                                     >
                                       <div className="flex items-center gap-2.5 min-w-0">
                                         {cand.photo_url || cand.photoUrl ? (
                                           <img
                                             src={cand.photo_url || cand.photoUrl}
                                             alt={cand.student_name || cand.full_name}
-                                            className="w-8 h-8 rounded-lg object-cover border border-purple-200 shrink-0"
+                                            className="w-8 h-8 rounded-lg object-cover border border-blue-200 shrink-0"
                                           />
                                         ) : (
-                                          <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 font-bold flex items-center justify-center text-xs shrink-0 border border-purple-200">
+                                          <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-xs shrink-0 border border-blue-200">
                                             {(cand.student_name || cand.full_name || "C").charAt(0)}
                                           </div>
                                         )}
 
                                         <div className="min-w-0">
-                                          <p className="font-semibold text-gray-900 truncate">
+                                          <p className="font-bold text-gray-900 truncate">
                                             {cand.student_name || cand.full_name || `Candidate #${cand.id}`}
                                           </p>
                                           {cand.student_code && (
@@ -1693,7 +1697,7 @@ export default function ElectionManagement() {
                                         </div>
                                       </div>
 
-                                      <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
                                         {cand.status || "ACTIVE"}
                                       </span>
                                     </div>
@@ -1713,12 +1717,12 @@ export default function ElectionManagement() {
                   <div className="space-y-3.5">
                     {/* Bulk & Individual Voter Enrollment Controls */}
                     {(selectedElection?.status === "DRAFT" || selectedElection?.status === "UPCOMING") && (
-                      <div className="bg-purple-50/60 rounded-xl p-3 border border-purple-100 space-y-3">
+                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-3.5 border border-blue-100 space-y-3 shadow-2xs">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                           <div>
-                            <p className="text-xs font-bold text-purple-950">Voter Enrollment</p>
-                            <p className="text-[11px] text-purple-800">
-                              Add students individually or bulk enroll your entire department roster.
+                            <p className="text-xs font-bold text-blue-950">Voter Enrollment</p>
+                            <p className="text-[11px] text-blue-800">
+                              Add students individually or bulk enroll your department roster.
                             </p>
                           </div>
 
@@ -1726,7 +1730,7 @@ export default function ElectionManagement() {
                             type="button"
                             onClick={handleBulkEnrollVoters}
                             disabled={bulkVoterLoading}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold shadow-2xs transition disabled:opacity-50 cursor-pointer self-start sm:self-auto"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition disabled:opacity-50 cursor-pointer self-start sm:self-auto"
                           >
                             <Users size={14} />
                             <span>{bulkVoterLoading ? "Enrolling..." : "Bulk Enroll Department"}</span>
@@ -1738,7 +1742,7 @@ export default function ElectionManagement() {
                           <select
                             value={selectedStudentToAdd}
                             onChange={(e) => setSelectedStudentToAdd(e.target.value)}
-                            className="flex-1 px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                            className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-2xs"
                           >
                             <option value="">-- Select Specific Student to Add --</option>
                             {departmentStudents.map((st) => (
@@ -1751,7 +1755,7 @@ export default function ElectionManagement() {
                             type="button"
                             onClick={handleAddSingleVoter}
                             disabled={addVoterLoading || !selectedStudentToAdd}
-                            className="px-3 py-1.5 bg-gray-900 hover:bg-black text-white rounded-lg text-xs font-semibold transition disabled:opacity-50 cursor-pointer"
+                            className="px-3.5 py-2 bg-slate-900 hover:bg-black text-white rounded-xl text-xs font-bold transition disabled:opacity-50 cursor-pointer shadow-2xs"
                           >
                             {addVoterLoading ? "Adding..." : "+ Add"}
                           </button>
@@ -1764,26 +1768,26 @@ export default function ElectionManagement() {
                       <div className="relative flex-1">
                         <Search
                           size={14}
-                          className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
                         />
                         <input
                           type="text"
                           placeholder="Search enrolled voters..."
                           value={voterSearch}
                           onChange={(e) => setVoterSearch(e.target.value)}
-                          className="w-full pl-8 pr-7 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-gray-200 rounded-xl text-xs text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
                         />
                         {voterSearch && (
                           <button
                             type="button"
                             onClick={() => setVoterSearch("")}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                           >
                             <X size={12} />
                           </button>
                         )}
                       </div>
-                      <span className="text-xs font-semibold text-gray-500 shrink-0">
+                      <span className="text-xs font-bold text-gray-500 shrink-0">
                         {filteredVoters.length} enrolled
                       </span>
                     </div>
@@ -1798,10 +1802,10 @@ export default function ElectionManagement() {
                         {filteredVoters.map((voter) => (
                           <div
                             key={voter.id || voter.student_id}
-                            className="bg-gray-50 rounded-lg p-2.5 border border-gray-200 flex items-center justify-between text-xs"
+                            className="bg-slate-50 rounded-xl p-2.5 border border-gray-200 flex items-center justify-between text-xs shadow-2xs"
                           >
                             <div>
-                              <p className="font-semibold text-gray-900">
+                              <p className="font-bold text-gray-900">
                                 {voter.student_name || voter.full_name || `Student ID: ${voter.student_id}`}
                               </p>
                               <p className="text-[11px] text-gray-500 font-mono">
@@ -1838,29 +1842,29 @@ export default function ElectionManagement() {
                   <div className="space-y-4">
                     {/* Turnout Metric Cards */}
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      <div className="bg-gray-50 rounded-xl p-3 border border-gray-200 text-center">
+                      <div className="bg-slate-50 rounded-2xl p-3 border border-gray-200 text-center shadow-2xs">
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
                           Total Eligible
                         </span>
-                        <p className="text-lg font-bold text-gray-900 mt-0.5">
+                        <p className="text-lg font-black text-gray-900 mt-0.5">
                           {turnoutStats?.totalEligibleVoters ?? eligibleVoters.length}
                         </p>
                       </div>
 
-                      <div className="bg-purple-50/50 rounded-xl p-3 border border-purple-200 text-center">
-                        <span className="text-[10px] font-bold text-purple-700 uppercase tracking-wider block">
+                      <div className="bg-blue-50/50 rounded-2xl p-3 border border-blue-200 text-center shadow-2xs">
+                        <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wider block">
                           Votes Cast
                         </span>
-                        <p className="text-lg font-bold text-purple-900 mt-0.5">
+                        <p className="text-lg font-black text-blue-900 mt-0.5">
                           {turnoutStats?.uniqueVotersParticipated ?? (resultsData ? "Recorded" : 0)}
                         </p>
                       </div>
 
-                      <div className="bg-emerald-50/50 rounded-xl p-3 border border-emerald-200 text-center col-span-2 sm:col-span-1">
+                      <div className="bg-emerald-50/50 rounded-2xl p-3 border border-emerald-200 text-center col-span-2 sm:col-span-1 shadow-2xs">
                         <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider block">
                           Turnout Rate
                         </span>
-                        <p className="text-lg font-bold text-emerald-700 mt-0.5">
+                        <p className="text-lg font-black text-emerald-700 mt-0.5">
                           {turnoutStats?.turnoutPercentage || "0.00%"}
                         </p>
                       </div>
@@ -1875,27 +1879,27 @@ export default function ElectionManagement() {
                         {resultsData.map((posRes) => (
                           <div
                             key={posRes.positionId}
-                            className="bg-gray-50 rounded-xl p-3 border border-gray-200 space-y-2 text-xs"
+                            className="bg-slate-50 rounded-2xl p-3.5 border border-gray-200 space-y-2 text-xs shadow-2xs"
                           >
                             <div className="flex items-center justify-between">
-                              <span className="font-bold text-gray-900">{posRes.positionName}</span>
+                              <span className="font-extrabold text-gray-900">{posRes.positionName}</span>
                               <span className="text-gray-500 font-semibold">{posRes.totalVotes} total votes</span>
                             </div>
 
                             <div className="space-y-1.5 pt-1">
                               {(posRes.candidates || []).map((c) => (
-                                <div key={c.candidateId} className="bg-white p-2 rounded-lg border border-gray-100 space-y-1">
+                                <div key={c.candidateId} className="bg-white p-2.5 rounded-xl border border-gray-100 space-y-1 shadow-2xs">
                                   <div className="flex items-center justify-between">
-                                    <span className="font-semibold text-gray-800">
+                                    <span className="font-bold text-gray-800">
                                       {c.candidateName} {posRes.winner?.candidateId === c.candidateId && "👑"}
                                     </span>
-                                    <span className="font-mono text-purple-700 font-bold">
+                                    <span className="font-mono text-blue-700 font-bold">
                                       {c.voteCount} ({c.percentage})
                                     </span>
                                   </div>
                                   <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                                     <div
-                                      className="h-full bg-purple-600 rounded-full"
+                                      className="h-full bg-blue-600 rounded-full"
                                       style={{ width: c.percentage || "0%" }}
                                     />
                                   </div>
@@ -1906,7 +1910,7 @@ export default function ElectionManagement() {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-xs text-gray-500 text-center py-4 bg-gray-50 rounded-xl border border-gray-100">
+                      <p className="text-xs text-gray-500 text-center py-4 bg-slate-50 rounded-xl border border-gray-100">
                         {selectedElection?.status === "DRAFT" || selectedElection?.status === "UPCOMING"
                           ? "Voting has not started yet. Results will populate once ballots are cast."
                           : "Tabulating votes and turnout data..."}
@@ -1918,11 +1922,11 @@ export default function ElectionManagement() {
                       selectedElection?.status === "CLOSED") && (
                       <div className="pt-2 text-center">
                         <Link
-                          to={`/admin/elections/${selectedElection.id}/results`}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-semibold shadow-xs transition"
+                          to={`/admin/results/${selectedElection.id}`}
+                          className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition"
                         >
-                          <BarChart3 size={15} />
-                          <span>View Official Result Breakdown →</span>
+                          <Trophy size={15} />
+                          <span>View Official Certified Breakdown →</span>
                         </Link>
                       </div>
                     )}

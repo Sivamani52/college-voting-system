@@ -20,6 +20,8 @@ import {
   ShieldCheck,
   CheckCircle2,
   User,
+  Eye,
+  Info,
 } from "lucide-react";
 import AdminLayout from "../../components/admin/AdminLayout";
 import Modal from "../../components/common/Modal";
@@ -51,8 +53,14 @@ export default function StudentManagement() {
     fullName: "",
     email: "",
     phone: "",
+    yearId: "1",
+    sectionId: "1",
   });
   const [formErrors, setFormErrors] = useState({});
+
+  // View Student Details Modal State
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
   // Fetch Admin Profile and Students
   const loadData = useCallback(async (isInitial = false) => {
@@ -132,11 +140,13 @@ export default function StudentManagement() {
           ""
         ).toLowerCase();
         const email = (student.email || "").toLowerCase();
+        const phone = (student.phone || "").toLowerCase();
 
         return (
           studentId.includes(query) ||
           fullName.includes(query) ||
-          email.includes(query)
+          email.includes(query) ||
+          phone.includes(query)
         );
       }
 
@@ -159,14 +169,9 @@ export default function StudentManagement() {
       errors.email = "Please enter a valid college email address";
     }
 
-    if (
-      adminProfile &&
-      (!adminProfile.department_id ||
-        !adminProfile.year_id ||
-        !adminProfile.section_id)
-    ) {
+    if (!adminProfile?.department_id) {
       errors.profile =
-        "Your Admin profile is missing Department, Year, or Section assignments. Please contact Super Admin.";
+        "Your Admin profile is missing a Department assignment. Please contact Super Admin.";
     }
 
     setFormErrors(errors);
@@ -188,24 +193,29 @@ export default function StudentManagement() {
 
     setCreateLoading(true);
     try {
+      const targetYearId = adminProfile.year_id || Number(formData.yearId) || 1;
+      const targetSectionId = adminProfile.section_id || Number(formData.sectionId) || 1;
+
       const payload = {
         studentId: formData.studentId.trim(),
         fullName: formData.fullName.trim(),
         email: formData.email.trim().toLowerCase(),
         phone: formData.phone.trim() || undefined,
-        departmentId: adminProfile.department_id,
-        yearId: adminProfile.year_id,
-        sectionId: adminProfile.section_id,
+        departmentId: Number(adminProfile.department_id),
+        yearId: targetYearId,
+        sectionId: targetSectionId,
       };
 
       const res = await createStudent(payload);
-      toast.success(res?.message || "Student created successfully");
+      toast.success(res?.message || "Student created successfully! Temporary credentials generated.");
       setIsCreateModalOpen(false);
       setFormData({
         studentId: "",
         fullName: "",
         email: "",
         phone: "",
+        yearId: "1",
+        sectionId: "1",
       });
       setFormErrors({});
       await loadData(false);
@@ -226,9 +236,16 @@ export default function StudentManagement() {
       fullName: "",
       email: "",
       phone: "",
+      yearId: String(adminProfile?.year_id || "1"),
+      sectionId: String(adminProfile?.section_id || "1"),
     });
     setFormErrors({});
     setIsCreateModalOpen(true);
+  };
+
+  const handleOpenViewModal = (student) => {
+    setSelectedStudent(student);
+    setIsViewModalOpen(true);
   };
 
   return (
@@ -297,7 +314,7 @@ export default function StudentManagement() {
                 Assigned Class Scope
               </h2>
               <p className="text-sm font-bold text-gray-900 mt-0.5">
-                {adminProfile?.full_name ? `${adminProfile.full_name}'s Class` : "Class Scope"}
+                {adminProfile?.full_name ? `${adminProfile.full_name}'s Department Class` : "Department Class Scope"}
               </p>
             </div>
           </div>
@@ -315,7 +332,7 @@ export default function StudentManagement() {
               <Calendar size={13} className="text-blue-600" />
               <span className="text-gray-500">Year ID:</span>
               <strong className="text-gray-900 font-mono">
-                {adminProfile?.year_id ?? (loading ? "..." : "N/A")}
+                {adminProfile?.year_id ?? (loading ? "..." : "All / Dept-Wide")}
               </strong>
             </span>
 
@@ -323,7 +340,7 @@ export default function StudentManagement() {
               <Layers size={13} className="text-blue-600" />
               <span className="text-gray-500">Section ID:</span>
               <strong className="text-gray-900 font-mono">
-                {adminProfile?.section_id ?? (loading ? "..." : "N/A")}
+                {adminProfile?.section_id ?? (loading ? "..." : "All / Dept-Wide")}
               </strong>
             </span>
           </div>
@@ -361,7 +378,7 @@ export default function StudentManagement() {
             />
             <input
               type="text"
-              placeholder="Search by Student ID, Name, or Email..."
+              placeholder="Search by Student ID, Name, Email, or Phone..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-9 py-2.5 bg-slate-50/70 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition shadow-2xs"
@@ -461,11 +478,14 @@ export default function StudentManagement() {
                     <th scope="col" className="py-3.5 px-4 sm:px-6">
                       College Email
                     </th>
-                    <th scope="col" className="py-3.5 px-4 sm:px-6">
+                    <th scope="col" className="py-3.5 px-4 sm:px-6 hidden md:table-cell">
                       Phone Number
                     </th>
-                    <th scope="col" className="py-3.5 px-4 sm:px-6 text-right sm:text-left">
+                    <th scope="col" className="py-3.5 px-4 sm:px-6">
                       Voter Status
+                    </th>
+                    <th scope="col" className="py-3.5 px-4 sm:px-6 text-right">
+                      Actions
                     </th>
                   </tr>
                 </thead>
@@ -518,17 +538,17 @@ export default function StudentManagement() {
                         </td>
 
                         {/* Phone */}
-                        <td className="py-4 px-4 sm:px-6 text-gray-600 text-xs sm:text-sm">
+                        <td className="py-4 px-4 sm:px-6 text-gray-600 text-xs sm:text-sm hidden md:table-cell">
                           <div className="flex items-center gap-1.5">
                             {phone !== "—" && (
-                              <Phone size={14} className="text-gray-400 shrink-0 hidden sm:inline" />
+                              <Phone size={14} className="text-gray-400 shrink-0" />
                             )}
                             <span className="font-medium">{phone}</span>
                           </div>
                         </td>
 
                         {/* Status */}
-                        <td className="py-4 px-4 sm:px-6 text-right sm:text-left">
+                        <td className="py-4 px-4 sm:px-6">
                           {isActive ? (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -540,6 +560,19 @@ export default function StudentManagement() {
                               Inactive
                             </span>
                           )}
+                        </td>
+
+                        {/* Actions */}
+                        <td className="py-4 px-4 sm:px-6 text-right">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenViewModal(student)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs transition cursor-pointer"
+                            title="View student profile details"
+                          >
+                            <Eye size={13} />
+                            <span className="hidden sm:inline">Details</span>
+                          </button>
                         </td>
                       </tr>
                     );
@@ -570,6 +603,75 @@ export default function StudentManagement() {
           )}
         </div>
 
+        {/* View Student Details Modal */}
+        <Modal
+          isOpen={isViewModalOpen}
+          onClose={() => setIsViewModalOpen(false)}
+          title="Student Profile Details"
+          subtitle="Complete record of registered student"
+          icon={<User size={22} className="text-blue-600" />}
+          cancelText="Close"
+          maxWidth="max-w-lg"
+        >
+          {selectedStudent && (
+            <div className="space-y-4 text-left">
+              <div className="bg-slate-50 rounded-2xl p-4 border border-gray-200/80 flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white font-black text-lg flex items-center justify-center shrink-0 shadow-xs uppercase">
+                  {(selectedStudent.full_name || selectedStudent.name || "S").charAt(0)}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-extrabold text-gray-900 text-base">
+                      {selectedStudent.full_name || selectedStudent.name}
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 uppercase tracking-wider">
+                      STUDENT
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 font-mono mt-0.5">
+                    ID: {selectedStudent.student_id || selectedStudent.studentId || "N/A"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-2xs space-y-1">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase">College Email</span>
+                  <p className="font-semibold text-gray-800 break-all">{selectedStudent.email || "N/A"}</p>
+                </div>
+                <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-2xs space-y-1">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase">Phone Number</span>
+                  <p className="font-semibold text-gray-800">{selectedStudent.phone || "Not provided"}</p>
+                </div>
+                <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-2xs space-y-1">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase">Department ID</span>
+                  <p className="font-semibold text-gray-800">Department #{selectedStudent.department_id || adminProfile?.department_id || "N/A"}</p>
+                </div>
+                <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-2xs space-y-1">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase">Year / Section ID</span>
+                  <p className="font-semibold text-gray-800">
+                    Year #{selectedStudent.year_id || 1} • Sec #{selectedStudent.section_id || 1}
+                  </p>
+                </div>
+                <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-2xs space-y-1 col-span-2">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase">Voter Account Status</span>
+                  <div className="pt-0.5">
+                    {(selectedStudent.status || selectedStudent.user_status || "ACTIVE").toUpperCase() === "ACTIVE" ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <CheckCircle2 size={12} /> Active Eligible Voter
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 border border-gray-200">
+                        Inactive / Suspended
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </Modal>
+
         {/* Add Student Modal */}
         <Modal
           isOpen={isCreateModalOpen}
@@ -592,7 +694,7 @@ export default function StudentManagement() {
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-3.5 text-xs text-blue-900 space-y-2 shadow-2xs">
               <p className="font-bold text-blue-950 flex items-center gap-1.5">
                 <ShieldCheck size={14} className="text-blue-600" />
-                <span>Class Scope (Auto-Assigned from Admin Profile)</span>
+                <span>Department Scope (Admin Profile #{adminProfile?.department_id})</span>
               </p>
               <div className="grid grid-cols-3 gap-2 pt-0.5 text-center">
                 <div className="bg-white rounded-xl p-2 border border-blue-100/80 shadow-2xs">
@@ -601,11 +703,11 @@ export default function StudentManagement() {
                 </div>
                 <div className="bg-white rounded-xl p-2 border border-blue-100/80 shadow-2xs">
                   <span className="block text-[10px] text-gray-400 font-bold uppercase">Year ID</span>
-                  <strong className="text-gray-900 font-mono text-xs">{adminProfile?.year_id ?? "N/A"}</strong>
+                  <strong className="text-gray-900 font-mono text-xs">{adminProfile?.year_id ? `#${adminProfile.year_id}` : "Selectable"}</strong>
                 </div>
                 <div className="bg-white rounded-xl p-2 border border-blue-100/80 shadow-2xs">
                   <span className="block text-[10px] text-gray-400 font-bold uppercase">Section ID</span>
-                  <strong className="text-gray-900 font-mono text-xs">{adminProfile?.section_id ?? "N/A"}</strong>
+                  <strong className="text-gray-900 font-mono text-xs">{adminProfile?.section_id ? `#${adminProfile.section_id}` : "Selectable"}</strong>
                 </div>
               </div>
             </div>
@@ -705,7 +807,7 @@ export default function StudentManagement() {
                   id="email"
                   type="email"
                   required
-                  placeholder="e.g. john.doe@college.edu"
+                  placeholder="e.g. john.doe@college.com"
                   value={formData.email}
                   onChange={(e) => {
                     setFormData({ ...formData, email: e.target.value });
@@ -726,6 +828,50 @@ export default function StudentManagement() {
                 </p>
               )}
             </div>
+
+            {/* Year & Section (Only active if not locked by Admin Profile) */}
+            {!adminProfile?.year_id && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label
+                    htmlFor="yearSelect"
+                    className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1"
+                  >
+                    Academic Year <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    id="yearSelect"
+                    value={formData.yearId}
+                    onChange={(e) => setFormData({ ...formData, yearId: e.target.value })}
+                    className="w-full px-3 py-2.5 bg-slate-50/70 border border-gray-300 rounded-xl text-xs sm:text-sm text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-2xs"
+                  >
+                    <option value="1">1st Year (ID #1)</option>
+                    <option value="2">2nd Year (ID #2)</option>
+                    <option value="3">3rd Year (ID #3)</option>
+                    <option value="4">4th Year (ID #4)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="sectionSelect"
+                    className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1"
+                  >
+                    Section <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    id="sectionSelect"
+                    value={formData.sectionId}
+                    onChange={(e) => setFormData({ ...formData, sectionId: e.target.value })}
+                    className="w-full px-3 py-2.5 bg-slate-50/70 border border-gray-300 rounded-xl text-xs sm:text-sm text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-2xs"
+                  >
+                    <option value="1">Section A (ID #1)</option>
+                    <option value="2">Section B (ID #2)</option>
+                    <option value="3">Section C (ID #3)</option>
+                  </select>
+                </div>
+              </div>
+            )}
 
             {/* Phone */}
             <div>
