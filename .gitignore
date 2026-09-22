@@ -27,4 +27,7 @@ credentials.txt
 backend/credentials.txt
 *.pem
 *.key
-
+# Temporary & scratch files
+scratch/
+.idea/
+.vscode/
