@@ -4,7 +4,19 @@ node_modules/
 # Environment variables
 .env
 .env.*
+*.env
 !.env.example
+
+# Passwords, Secrets & Credentials
+credentials.txt
+*credentials*.txt
+*password*.txt
+*passwords*.txt
+*.pem
+*.key
+*.cert
+*.pfx
+secrets.json
 
 # Logs
 logs/
@@ -36,12 +48,9 @@ Thumbs.db
 # Temporary files
 tmp/
 temp/
+scratch/
 
 # Uploads
 uploads/
 
-# Secrets / certificates
-*.pem
-*.key
-credentials.txt
 
