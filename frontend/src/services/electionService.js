@@ -49,18 +49,8 @@ export const deleteElection = async (id) => {
  * Fetch election results
  */
 export const getElectionResults = async (electionId) => {
-  try {
-    const response = await api.get(`/results/election/${electionId}`);
-    return response.data;
-  } catch {
-    try {
-      const response = await api.get(`/results/${electionId}`);
-      return response.data;
-    } catch {
-      const response = await api.get(`/votes/results/${electionId}`);
-      return response.data;
-    }
-  }
+  const response = await api.get(`/results/${electionId}`);
+  return response.data;
 };
 
 /**
@@ -152,6 +142,30 @@ export const createAdmin = async (adminData) => {
 };
 
 /**
+ * Update admin details (Super Admin only)
+ */
+export const updateAdmin = async (id, adminData) => {
+  const response = await api.put(`/admins/${id}`, adminData);
+  return response.data;
+};
+
+/**
+ * Toggle admin status ACTIVE/INACTIVE (Super Admin only)
+ */
+export const toggleAdminStatus = async (id, status) => {
+  const response = await api.patch(`/admins/${id}/status`, { status });
+  return response.data;
+};
+
+/**
+ * Delete admin account (Super Admin only)
+ */
+export const deleteAdmin = async (id) => {
+  const response = await api.delete(`/admins/${id}`);
+  return response.data;
+};
+
+/**
  * Fetch all students
  */
 export const getAllStudents = async () => {
@@ -172,10 +186,22 @@ export default {
   getElectionById,
   createElection,
   updateElectionStatus,
+  deleteElection,
   getElectionResults,
   getElectionStats,
+  createPosition,
+  createCandidate,
+  getPositionsByElection,
+  getCandidatesByElection,
+  getEligibleVotersByElection,
+  addEligibleVoter,
+  addBulkEligibleVoters,
+  removeEligibleVoter,
   getAllAdmins,
   createAdmin,
+  updateAdmin,
+  toggleAdminStatus,
+  deleteAdmin,
   getAllStudents,
   createStudent,
 };

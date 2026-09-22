@@ -36,7 +36,7 @@ export default function CandidateCard({
           onSelectCandidate(position, candidate);
         }
       }}
-      className={`relative rounded-3xl border p-5 transition flex flex-col justify-between cursor-pointer ${
+      className={`relative rounded-2xl sm:rounded-3xl border p-4 sm:p-5 transition flex flex-col justify-between cursor-pointer ${
         isSelectedByVote
           ? "border-emerald-500 bg-emerald-50/50 ring-2 ring-emerald-500/30 shadow-xs cursor-default"
           : isSelectedForBatch
@@ -62,7 +62,7 @@ export default function CandidateCard({
       )}
 
       <div>
-        <div className="flex items-center gap-3 mb-3 pr-16">
+        <div className="flex items-center gap-2.5 sm:gap-3 mb-3 pr-14 sm:pr-16">
           {candidate.photo_url || candidate.photoUrl ? (
             <img
               src={candidate.photo_url || candidate.photoUrl}

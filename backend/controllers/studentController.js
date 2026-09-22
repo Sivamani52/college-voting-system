@@ -10,7 +10,9 @@ import {
   findStudentByStudentId,
   findStudentById,
   findStudentByUserId,
-  findAllStudents
+  findAllStudents,
+  updateStudentRecord,
+  deleteStudentRecord
 } from "../models/studentModel.js";
 
 import {
@@ -280,5 +282,135 @@ export async function getStudentProfileController(req, res) {
     return res.status(500).json({
       message: "Failed to fetch student profile"
     });
+  }
+}
+
+export async function updateStudentController(req, res) {
+  try {
+    const { id } = req.params;
+    const { fullName, departmentId, yearId, sectionId, phone } = req.body;
+
+    const student = await findStudentById(id);
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    // Scoping for ADMIN
+    if (req.user?.role === "ADMIN") {
+      const admin = await findAdminByUserId(req.user.userId || req.user.id);
+      if (
+        !admin ||
+        student.department_id !== admin.department_id ||
+        (admin.year_id && student.year_id !== admin.year_id) ||
+        (admin.section_id && student.section_id !== admin.section_id)
+      ) {
+        return res.status(403).json({
+          message: "You do not have permission to modify students outside your scope"
+        });
+      }
+
+      if (departmentId && Number(departmentId) !== admin.department_id) {
+        return res.status(403).json({
+          message: "Cannot transfer student outside your assigned department"
+        });
+      }
+      if (yearId && admin.year_id && Number(yearId) !== admin.year_id) {
+        return res.status(403).json({
+          message: "Cannot transfer student outside your assigned year"
+        });
+      }
+      if (sectionId && admin.section_id && Number(sectionId) !== admin.section_id) {
+        return res.status(403).json({
+          message: "Cannot transfer student outside your assigned section"
+        });
+      }
+    }
+
+    await updateStudentRecord(id, {
+      fullName: fullName || student.full_name,
+      departmentId: departmentId || student.department_id,
+      yearId: yearId !== undefined ? yearId : student.year_id,
+      sectionId: sectionId !== undefined ? sectionId : student.section_id,
+      phone: phone !== undefined ? phone : student.phone
+    });
+
+    const updated = await findStudentById(id);
+    return res.json({
+      message: "Student updated successfully",
+      student: updated
+    });
+  } catch (error) {
+    console.error("Update student error:", error);
+    return res.status(500).json({
+      message: "Failed to update student"
+    });
+  }
+}
+
+export async function deleteStudentController(req, res) {
+  try {
+    const { id } = req.params;
+
+    const student = await findStudentById(id);
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    // Scoping for ADMIN
+    if (req.user?.role === "ADMIN") {
+      const admin = await findAdminByUserId(req.user.userId || req.user.id);
+      if (
+        !admin ||
+        student.department_id !== admin.department_id ||
+        (admin.year_id && student.year_id !== admin.year_id) ||
+        (admin.section_id && student.section_id !== admin.section_id)
+      ) {
+        return res.status(403).json({
+          message: "You do not have permission to delete students outside your scope"
+        });
+      }
+    }
+
+    await deleteStudentRecord(id);
+    return res.json({ message: "Student deleted successfully" });
+  } catch (error) {
+    console.error("Delete student error:", error);
+    return res.status(500).json({ message: "Failed to delete student" });
+  }
+}
+
+export async function toggleStudentStatusController(req, res) {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!status || !["ACTIVE", "INACTIVE"].includes(status)) {
+      return res.status(400).json({ message: "Valid status (ACTIVE or INACTIVE) is required" });
+    }
+
+    const student = await findStudentById(id);
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    if (req.user?.role === "ADMIN") {
+      const admin = await findAdminByUserId(req.user.userId || req.user.id);
+      if (
+        !admin ||
+        student.department_id !== admin.department_id ||
+        (admin.year_id && student.year_id !== admin.year_id) ||
+        (admin.section_id && student.section_id !== admin.section_id)
+      ) {
+        return res.status(403).json({
+          message: "You do not have permission to modify student status outside your scope"
+        });
+      }
+    }
+
+    await updateStudentRecord(id, { status });
+    return res.json({ message: `Student status updated to ${status}` });
+  } catch (error) {
+    console.error("Toggle student status error:", error);
+    return res.status(500).json({ message: "Failed to toggle student status" });
   }
 }

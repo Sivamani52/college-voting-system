@@ -4,7 +4,10 @@ import {
   createStudent,
   getAllStudentsController,
   getStudentByIdController,
-  getStudentProfileController
+  getStudentProfileController,
+  updateStudentController,
+  deleteStudentController,
+  toggleStudentStatusController
 } from "../controllers/studentController.js";
 
 import {
@@ -47,6 +50,30 @@ router.get(
   authenticateToken,
   authorizeRoles("ADMIN", "SUPER_ADMIN"),
   getStudentByIdController
+);
+
+// Update student (Admin, Super Admin)
+router.put(
+  "/:id",
+  authenticateToken,
+  authorizeRoles("ADMIN", "SUPER_ADMIN"),
+  updateStudentController
+);
+
+// Toggle student status (Admin, Super Admin)
+router.patch(
+  "/:id/status",
+  authenticateToken,
+  authorizeRoles("ADMIN", "SUPER_ADMIN"),
+  toggleStudentStatusController
+);
+
+// Delete student (Admin, Super Admin)
+router.delete(
+  "/:id",
+  authenticateToken,
+  authorizeRoles("ADMIN", "SUPER_ADMIN"),
+  deleteStudentController
 );
 
 export default router;

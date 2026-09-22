@@ -284,19 +284,19 @@ export async function resetPassword(req, res) {
 
 export async function changePassword(req, res) {
   try {
+    const effectiveUserId = req.user?.userId || req.user?.id || req.body.userId;
     const {
-      userId,
       currentPassword,
       newPassword
     } = req.body;
 
     if (
-      !userId ||
+      !effectiveUserId ||
       !currentPassword ||
       !newPassword
     ) {
       return res.status(400).json({
-        message: "All fields are required"
+        message: "All fields are required (current password and new password)"
       });
     }
 
@@ -308,7 +308,7 @@ export async function changePassword(req, res) {
 
     const [rows] = await pool.query(
       "SELECT * FROM users WHERE id = ? LIMIT 1",
-      [userId]
+      [effectiveUserId]
     );
 
     const user = rows[0];
@@ -341,7 +341,7 @@ export async function changePassword(req, res) {
        WHERE id = ?`,
       [
         newPasswordHash,
-        userId
+        effectiveUserId
       ]
     );
 

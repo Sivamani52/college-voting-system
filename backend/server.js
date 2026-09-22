@@ -12,8 +12,14 @@ import candidateRoutes from "./routes/candidateRoutes.js";
 import eligibleVoterRoutes from "./routes/eligibleVoterRoutes.js";
 import voteRoutes from "./routes/voteRoutes.js";
 import resultRoutes from "./routes/resultRoutes.js";
+import departmentRoutes from "./routes/departmentRoutes.js";
+import academicStructureRoutes from "./routes/academicStructureRoutes.js";
+import path from "path";
+import { fileURLToPath } from "url";
 
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, "./.env") });
 
 const app = express();
 
@@ -31,6 +37,8 @@ app.use("/api/candidates",candidateRoutes);
 app.use("/api/eligible-voters",eligibleVoterRoutes);
 app.use("/api/votes", voteRoutes);
 app.use("/api/results", resultRoutes);
+app.use("/api/departments", departmentRoutes);
+app.use("/api", academicStructureRoutes);
 
 
 

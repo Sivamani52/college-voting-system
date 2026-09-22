@@ -18,16 +18,13 @@ import {
   X,
   Plus,
   Trash2,
-  Building2,
   AlertTriangle,
   PlayCircle,
   StopCircle,
   Share2,
   ArrowRight,
   ShieldCheck,
-  Calendar,
   Trophy,
-  ExternalLink,
 } from "lucide-react";
 import AdminLayout from "../../components/admin/AdminLayout";
 import StatCard from "../../components/common/StatCard";

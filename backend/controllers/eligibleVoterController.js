@@ -317,7 +317,12 @@ export async function checkMyEligibilityController(
 ) {
   try {
     const { electionId } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user?.userId || req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        message: "Authentication required"
+      });
+    }
 
     const student = await findStudentByUserId(userId);
     if (!student) {
