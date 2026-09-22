@@ -20,11 +20,11 @@ import {
 const router = express.Router();
 
 
-// Create candidate (Super Admin only)
+// Create candidate (Super Admin, Admin)
 router.post(
   "/",
   authenticateToken,
-  authorizeRoles("SUPER_ADMIN"),
+  authorizeRoles("SUPER_ADMIN", "ADMIN"),
   createCandidateController
 );
 

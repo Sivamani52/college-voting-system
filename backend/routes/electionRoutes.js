@@ -4,7 +4,8 @@ import {
   createElectionController,
   getAllElections,
   getElectionById,
-  changeElectionStatus
+  changeElectionStatus,
+  deleteElectionController
 } from "../controllers/electionController.js";
 
 import {
@@ -21,7 +22,7 @@ const router = express.Router();
 router.post(
   "/",
   authenticateToken,
-  authorizeRoles("SUPER_ADMIN"),
+  authorizeRoles("SUPER_ADMIN", "ADMIN"),
   createElectionController
 );
 
@@ -48,9 +49,16 @@ router.get(
 router.patch(
   "/:id/status",
   authenticateToken,
-  authorizeRoles("SUPER_ADMIN"),
+  authorizeRoles("SUPER_ADMIN", "ADMIN"),
   changeElectionStatus
 );
 
+// Delete election (Super Admin, Admin)
+router.delete(
+  "/:id",
+  authenticateToken,
+  authorizeRoles("SUPER_ADMIN", "ADMIN"),
+  deleteElectionController
+);
 
 export default router;

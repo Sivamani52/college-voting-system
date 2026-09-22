@@ -55,3 +55,13 @@ export async function updateElectionStatus(id, status) {
 
   return result.affectedRows;
 }
+
+export async function deleteElection(id) {
+  const [result] = await pool.query(
+    `DELETE FROM elections
+     WHERE id = ?`,
+    [id]
+  );
+
+  return result.affectedRows;
+}

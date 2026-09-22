@@ -38,6 +38,14 @@ export const updateElectionStatus = async (id, status) => {
 };
 
 /**
+ * Delete election
+ */
+export const deleteElection = async (id) => {
+  const response = await api.delete(`/elections/${id}`);
+  return response.data;
+};
+
+/**
  * Fetch election results
  */
 export const getElectionResults = async (electionId) => {
@@ -60,6 +68,70 @@ export const getElectionResults = async (electionId) => {
  */
 export const getElectionStats = async (electionId) => {
   const response = await api.get(`/votes/stats/${electionId}`);
+  return response.data;
+};
+
+/**
+ * Create a new position
+ */
+export const createPosition = async (positionData) => {
+  const response = await api.post("/positions", positionData);
+  return response.data;
+};
+
+/**
+ * Create a new candidate
+ */
+export const createCandidate = async (candidateData) => {
+  const response = await api.post("/candidates", candidateData);
+  return response.data;
+};
+
+/**
+ * Fetch positions by election
+ */
+export const getPositionsByElection = async (electionId) => {
+  const response = await api.get(`/positions/election/${electionId}`);
+  return response.data;
+};
+
+/**
+ * Fetch candidates by election
+ */
+export const getCandidatesByElection = async (electionId) => {
+  const response = await api.get(`/candidates/election/${electionId}`);
+  return response.data;
+};
+
+/**
+ * Fetch eligible voters by election
+ */
+export const getEligibleVotersByElection = async (electionId) => {
+  const response = await api.get(`/eligible-voters/election/${electionId}`);
+  return response.data;
+};
+
+/**
+ * Add eligible voter (Admin, Super Admin)
+ */
+export const addEligibleVoter = async (voterData) => {
+  const response = await api.post("/eligible-voters", voterData);
+  return response.data;
+};
+
+/**
+ * Bulk add eligible voters (Admin, Super Admin)
+ */
+export const addBulkEligibleVoters = async (bulkData) => {
+  const response = await api.post("/eligible-voters/bulk", bulkData);
+  return response.data;
+};
+
+/**
+ * Remove eligible voter (Admin, Super Admin)
+ */
+export const removeEligibleVoter = async (id) => {
+  const response = await api.delete(`/eligible-voters/${id}`);
   return response.data;
 };
 
