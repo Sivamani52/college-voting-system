@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { useLocation, NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -13,6 +13,8 @@ import { useAuth } from "../../context/useAuth";
 
 export default function AdminSidebar({ mobileOpen, onClose }) {
   const { user, logout } = useAuth();
+  const location = useLocation();
+  const currentPath = location.pathname.toLowerCase();
 
   const navSections = [
     {
@@ -51,6 +53,25 @@ export default function AdminSidebar({ mobileOpen, onClose }) {
       ],
     },
   ];
+
+  const isItemActive = (itemName, itemTo) => {
+    switch (itemName) {
+      case "Dashboard":
+        return (
+          currentPath === "/admin" ||
+          currentPath === "/admin/" ||
+          currentPath.startsWith("/admin/dashboard")
+        );
+      case "Students":
+        return currentPath.startsWith("/admin/students");
+      case "Elections":
+        return currentPath.startsWith("/admin/elections") && !currentPath.includes("/results");
+      case "Profile & Settings":
+        return currentPath.startsWith("/admin/profile");
+      default:
+        return currentPath === itemTo.toLowerCase() || currentPath.startsWith(itemTo.toLowerCase());
+    }
+  };
 
   const handleLinkClick = () => {
     if (onClose) {
@@ -102,42 +123,37 @@ export default function AdminSidebar({ mobileOpen, onClose }) {
             <div className="space-y-1">
               {section.items.map((item) => {
                 const Icon = item.icon;
+                const active = isItemActive(item.name, item.to);
                 return (
                   <NavLink
                     key={item.to}
                     to={item.to}
                     onClick={handleLinkClick}
-                    className={({ isActive }) =>
-                      `flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all group ${
-                        isActive
-                          ? "bg-blue-600 text-white shadow-xs shadow-blue-500/20"
-                          : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 active:scale-99"
-                      }`
-                    }
+                    className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all group ${
+                      active
+                        ? "bg-blue-600 text-white shadow-xs shadow-blue-500/20"
+                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 active:scale-99"
+                    }`}
                   >
-                    {({ isActive }) => (
-                      <>
-                        <div className="flex items-center gap-3">
-                          <Icon
-                            size={18}
-                            className={`shrink-0 ${
-                              isActive
-                                ? "text-white"
-                                : "text-gray-400 group-hover:text-blue-600 transition-colors"
-                            }`}
-                          />
-                          <span>{item.name}</span>
-                        </div>
-                        <ChevronRight
-                          size={14}
-                          className={`transition-transform opacity-60 ${
-                            isActive
-                              ? "opacity-100 translate-x-0.5"
-                              : "group-hover:translate-x-0.5"
-                          }`}
-                        />
-                      </>
-                    )}
+                    <div className="flex items-center gap-3">
+                      <Icon
+                        size={18}
+                        className={`shrink-0 ${
+                          active
+                            ? "text-white"
+                            : "text-gray-400 group-hover:text-blue-600 transition-colors"
+                        }`}
+                      />
+                      <span>{item.name}</span>
+                    </div>
+                    <ChevronRight
+                      size={14}
+                      className={`transition-transform opacity-60 ${
+                        active
+                          ? "opacity-100 translate-x-0.5"
+                          : "group-hover:translate-x-0.5"
+                      }`}
+                    />
                   </NavLink>
                 );
               })}

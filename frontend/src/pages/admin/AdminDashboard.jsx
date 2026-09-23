@@ -162,106 +162,142 @@ export default function AdminDashboard() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* Top Header Banner */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-100 uppercase tracking-wider">
-                <ShieldCheck size={12} /> Admin Dashboard
-              </span>
-            </div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-gray-900 tracking-tight">
-              Welcome back,{" "}
-              <span className="text-blue-600">
-                {adminProfile?.full_name || user?.name || "Administrator"}
-              </span>
-            </h1>
-            <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
-              Monitor active elections, student voters, and candidate nominations in your class.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2.5 shrink-0">
-            <button
-              type="button"
-              onClick={handleRefreshAll}
-              disabled={isRefreshing || isLoading}
-              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-gray-300 bg-white text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 active:scale-98 transition shadow-2xs disabled:opacity-50 cursor-pointer"
-            >
-              <RefreshCw
-                size={16}
-                className={isRefreshing ? "animate-spin text-blue-600" : "text-gray-500"}
-              />
-              <span>{isRefreshing ? "Refreshing..." : "Refresh"}</span>
-            </button>
-
-            <Link
-              to="/admin/elections"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-xs sm:text-sm font-bold text-white shadow-xs shadow-blue-500/20 active:scale-98 transition"
-            >
-              <PlusCircle size={16} />
-              <span>Create Election</span>
-            </Link>
-          </div>
-        </div>
-
         {/* Errors if any */}
         {profileError && <Alert type="error" message={profileError} onDismiss={() => setProfileError(null)} />}
         {studentsError && <Alert type="error" message={studentsError} onDismiss={() => setStudentsError(null)} />}
         {electionsError && <Alert type="error" message={electionsError} onDismiss={() => setElectionsError(null)} />}
 
-        {/* Assigned Scope Banner */}
-        <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 rounded-2xl sm:rounded-3xl p-5 sm:p-6 text-white shadow-lg shadow-blue-950/20 relative overflow-hidden">
+        {/* Highlight Hero Dashboard Banner */}
+        <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 text-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-sm border border-slate-800 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-          
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
-            <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md text-blue-300 flex items-center justify-center border border-white/20 shrink-0 shadow-xs">
-                <GraduationCap size={24} />
+          <div className="absolute -bottom-10 -left-10 w-60 h-60 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                  <ShieldCheck size={14} className="text-blue-400" />
+                  College Administrator Console
+                </span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/10 text-slate-200 border border-white/15">
+                  Dept ID: {adminProfile?.department_id ?? "All"}
+                </span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/10 text-slate-200 border border-white/15">
+                  Year: {adminProfile?.year_id ?? 1} • Sec: {adminProfile?.section_id ?? "A"}
+                </span>
+              </div>
+
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white">
+                Welcome back,{" "}
+                <span className="text-blue-400">
+                  {adminProfile?.full_name || user?.name || "Administrator"}
+                </span>
+              </h1>
+
+              <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+                Centralized authority over departmental elections, registered student voter lists, and candidate nomination approvals for your academic class.
+              </p>
+
+              <div className="pt-1 flex items-center gap-2 flex-wrap text-xs text-blue-200">
+                <span className="bg-white/10 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+                  <Building2 size={13} className="text-blue-300" />
+                  <span>{adminProfile?.department_name || `Department #${adminProfile?.department_id || 1}`}</span>
+                </span>
+                <span className="bg-white/10 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+                  <Mail size={13} className="text-blue-300" />
+                  <span>{user?.email}</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Quick Actions Panel */}
+            <div className="flex flex-row sm:flex-col gap-2.5 shrink-0">
+              <Link
+                to="/admin/elections"
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 active:scale-98 text-white font-bold text-xs sm:text-sm shadow-xs transition"
+              >
+                <PlusCircle size={16} />
+                <span>Create Election</span>
+              </Link>
+
+              <Link
+                to="/admin/students"
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/20 active:scale-98 text-white font-bold text-xs transition border border-white/20"
+              >
+                <Users size={16} className="text-blue-300" />
+                <span>Students ({students.length})</span>
+              </Link>
+
+              <button
+                type="button"
+                onClick={handleRefreshAll}
+                disabled={isRefreshing || isLoading}
+                className="hidden sm:inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-xs font-semibold text-slate-300 transition border border-slate-700 cursor-pointer disabled:opacity-50"
+              >
+                <RefreshCw size={14} className={isRefreshing ? "animate-spin text-blue-400" : ""} />
+                <span>{isRefreshing ? "Refreshing..." : "Sync Data"}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Administrator Quickstart & Onboarding Guide */}
+        <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200/90 p-4 sm:p-6 shadow-2xs">
+          <div className="flex items-center justify-between mb-3 border-b border-gray-100 pb-3">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-blue-100 text-blue-700 rounded-lg">
+                <Sparkles size={16} />
+              </div>
+              <h2 className="text-xs sm:text-sm font-bold text-gray-900 uppercase tracking-wider">
+                Administrator Workflow Checklist
+              </h2>
+            </div>
+            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+              Department Coordinator
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-gray-100 flex items-start gap-3">
+              <div className="w-7 h-7 rounded-full bg-blue-600 text-white font-black text-xs flex items-center justify-center shrink-0">
+                1
               </div>
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-blue-300">
-                  Assigned Administrative Scope
-                </span>
-                <h2 className="text-base sm:text-lg font-bold text-white">
-                  {adminProfile?.full_name ? `${adminProfile.full_name}'s Class Roster` : "Department Class Scope"}
-                </h2>
-                <p className="text-xs text-blue-200 mt-0.5">
-                  Assigned to oversee class elections, voter registration, and candidates.
+                <p className="text-xs font-bold text-gray-900">Verify Class Roster</p>
+                <p className="text-[11px] text-gray-500 mt-0.5 leading-relaxed">
+                  Ensure all student voters in your class are registered with valid college IDs and emails.
                 </p>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
-              <div className="bg-white/10 backdrop-blur-md rounded-xl px-3 py-1.5 border border-white/15 flex items-center gap-2">
-                <Building2 size={13} className="text-blue-300" />
-                <span>Dept ID:</span>
-                <strong className="text-white font-mono">
-                  {adminProfile?.department_id ?? (loadingProfile ? "..." : "N/A")}
-                </strong>
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-gray-100 flex items-start gap-3">
+              <div className="w-7 h-7 rounded-full bg-indigo-600 text-white font-black text-xs flex items-center justify-center shrink-0">
+                2
               </div>
-
-              <div className="bg-white/10 backdrop-blur-md rounded-xl px-3 py-1.5 border border-white/15 flex items-center gap-2">
-                <Calendar size={13} className="text-blue-300" />
-                <span>Year ID:</span>
-                <strong className="text-white font-mono">
-                  {adminProfile?.year_id ?? (loadingProfile ? "..." : "N/A")}
-                </strong>
+              <div>
+                <p className="text-xs font-bold text-gray-900">Setup Election & Positions</p>
+                <p className="text-[11px] text-gray-500 mt-0.5 leading-relaxed">
+                  Establish election timelines, define council positions, and assign candidate profiles.
+                </p>
               </div>
+            </div>
 
-              <div className="bg-white/10 backdrop-blur-md rounded-xl px-3 py-1.5 border border-white/15 flex items-center gap-2">
-                <Layers size={13} className="text-blue-300" />
-                <span>Section ID:</span>
-                <strong className="text-white font-mono">
-                  {adminProfile?.section_id ?? (loadingProfile ? "..." : "N/A")}
-                </strong>
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-gray-100 flex items-start gap-3">
+              <div className="w-7 h-7 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0">
+                3
+              </div>
+              <div>
+                <p className="text-xs font-bold text-gray-900">Track & Publish Results</p>
+                <p className="text-[11px] text-gray-500 mt-0.5 leading-relaxed">
+                  Monitor live participation tallies, close polls when concluded, and release certified results.
+                </p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Key Metrics Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
           <StatCard
             title="Total Students"
             value={loadingStudents ? "..." : studentStats.total}

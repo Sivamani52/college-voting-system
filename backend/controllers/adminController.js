@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import pool from "../config/db.js";
 import {
   createUser,
   findUserByEmail
@@ -7,7 +8,9 @@ import {
   createAdminRecord,
   findAllAdmins,
   findAdminById,
-  findAdminByUserId
+  findAdminByUserId,
+  updateAdminRecord,
+  deleteAdminRecord,
 } from "../models/adminModel.js";
 import {
   generateTemporaryPassword
@@ -157,5 +160,68 @@ export async function getAdminProfileController(req, res) {
     return res.status(500).json({
       message: "Failed to fetch admin profile"
     });
+  }
+}
+
+export async function updateAdminController(req, res) {
+  try {
+    const { id } = req.params;
+    const { name, departmentId, yearId, sectionId } = req.body;
+
+    const admin = await findAdminById(id);
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+
+    await updateAdminRecord(id, {
+      fullName: name || admin.full_name,
+      departmentId: departmentId || admin.department_id,
+      yearId: yearId !== undefined ? yearId : admin.year_id,
+      sectionId: sectionId !== undefined ? sectionId : admin.section_id,
+    });
+
+    return res.json({ message: "Admin updated successfully" });
+  } catch (error) {
+    console.error("Update admin error:", error);
+    return res.status(500).json({ message: error.message || "Failed to update admin" });
+  }
+}
+
+export async function toggleAdminStatusController(req, res) {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!status || !["ACTIVE", "INACTIVE"].includes(status)) {
+      return res.status(400).json({ message: "Status must be ACTIVE or INACTIVE" });
+    }
+
+    const admin = await findAdminById(id);
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+
+    await pool.query(`UPDATE users SET status = ? WHERE id = ?`, [status, admin.user_id]);
+
+    return res.json({ message: `Admin account marked as ${status}` });
+  } catch (error) {
+    console.error("Toggle admin status error:", error);
+    return res.status(500).json({ message: error.message || "Failed to update admin status" });
+  }
+}
+
+export async function deleteAdminController(req, res) {
+  try {
+    const { id } = req.params;
+    const admin = await findAdminById(id);
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+
+    await deleteAdminRecord(id);
+    return res.json({ message: "Admin deleted successfully" });
+  } catch (error) {
+    console.error("Delete admin error:", error);
+    return res.status(500).json({ message: error.message || "Failed to delete admin" });
   }
 }

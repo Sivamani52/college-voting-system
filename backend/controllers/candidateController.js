@@ -15,8 +15,17 @@ import {
   findPositionById
 } from "../models/positionModel.js";
 
-import pool from "../config/db.js";
+import {
+  getAdminScope,
+  checkAdminElectionScope,
+  checkAdminStudentScope,
+  checkStudentElectionScope,
+  UNAUTHORIZED_ELECTION_MESSAGE,
+  STUDENT_UNAUTHORIZED_ELECTION_MESSAGE
+} from "../middleware/adminScopeMiddleware.js";
+import { findStudentByUserId } from "../models/studentModel.js";
 
+import pool from "../config/db.js";
 
 export async function createCandidateController(
   req,
@@ -50,6 +59,17 @@ export async function createCandidateController(
       return res.status(404).json({
         message: "Election not found"
       });
+    }
+
+    // Enforce Admin section scope on election
+    if (req.user?.role === "ADMIN") {
+      const adminScope = await getAdminScope(req.user.userId || req.user.id);
+      if (!checkAdminElectionScope(adminScope, election)) {
+        return res.status(403).json({
+          success: false,
+          message: UNAUTHORIZED_ELECTION_MESSAGE
+        });
+      }
     }
 
     // Don't allow candidates after election starts
@@ -104,6 +124,17 @@ export async function createCandidateController(
 
     const studentRecord = students[0];
 
+    // Enforce Admin section scope on student nomination
+    if (req.user?.role === "ADMIN") {
+      const adminScope = await getAdminScope(req.user.userId || req.user.id);
+      if (!checkAdminStudentScope(adminScope, studentRecord)) {
+        return res.status(403).json({
+          success: false,
+          message: "Candidates can only be nominated from your assigned section"
+        });
+      }
+    }
+
     // Check whether student is already candidate for this position in this election
     const [existing] = await pool.query(
       `SELECT id
@@ -154,7 +185,6 @@ export async function createCandidateController(
   }
 }
 
-
 export async function getCandidatesByElection(
   req,
   res
@@ -169,6 +199,25 @@ export async function getCandidatesByElection(
       return res.status(404).json({
         message: "Election not found"
       });
+    }
+
+    // Enforce Admin section scope
+    if (req.user?.role === "ADMIN") {
+      const adminScope = await getAdminScope(req.user.userId || req.user.id);
+      if (!checkAdminElectionScope(adminScope, election)) {
+        return res.status(403).json({
+          success: false,
+          message: UNAUTHORIZED_ELECTION_MESSAGE
+        });
+      }
+    } else if (req.user?.role === "STUDENT") {
+      const student = await findStudentByUserId(req.user.userId || req.user.id);
+      if (!student || !checkStudentElectionScope(student, election)) {
+        return res.status(403).json({
+          success: false,
+          message: STUDENT_UNAUTHORIZED_ELECTION_MESSAGE
+        });
+      }
     }
 
     const candidates =
@@ -193,7 +242,6 @@ export async function getCandidatesByElection(
   }
 }
 
-
 export async function getCandidatesByPositionController(
   req,
   res
@@ -208,6 +256,26 @@ export async function getCandidatesByPositionController(
       return res.status(404).json({
         message: "Position not found"
       });
+    }
+
+    if (req.user?.role === "ADMIN") {
+      const election = await findElectionById(position.election_id);
+      const adminScope = await getAdminScope(req.user.userId || req.user.id);
+      if (!checkAdminElectionScope(adminScope, election)) {
+        return res.status(403).json({
+          success: false,
+          message: UNAUTHORIZED_ELECTION_MESSAGE
+        });
+      }
+    } else if (req.user?.role === "STUDENT") {
+      const election = await findElectionById(position.election_id);
+      const student = await findStudentByUserId(req.user.userId || req.user.id);
+      if (!student || !checkStudentElectionScope(student, election)) {
+        return res.status(403).json({
+          success: false,
+          message: STUDENT_UNAUTHORIZED_ELECTION_MESSAGE
+        });
+      }
     }
 
     const candidates =
@@ -232,7 +300,6 @@ export async function getCandidatesByPositionController(
   }
 }
 
-
 export async function getCandidateByIdController(
   req,
   res
@@ -247,6 +314,17 @@ export async function getCandidateByIdController(
       return res.status(404).json({
         message: "Candidate not found"
       });
+    }
+
+    if (req.user?.role === "ADMIN") {
+      const election = await findElectionById(candidate.election_id);
+      const adminScope = await getAdminScope(req.user.userId || req.user.id);
+      if (!checkAdminElectionScope(adminScope, election)) {
+        return res.status(403).json({
+          success: false,
+          message: UNAUTHORIZED_ELECTION_MESSAGE
+        });
+      }
     }
 
     return res.json({
@@ -265,7 +343,6 @@ export async function getCandidateByIdController(
     });
   }
 }
-
 
 export async function updateCandidateController(
   req,
@@ -293,6 +370,16 @@ export async function updateCandidateController(
       await findElectionById(
         candidate.election_id
       );
+
+    if (req.user?.role === "ADMIN") {
+      const adminScope = await getAdminScope(req.user.userId || req.user.id);
+      if (!checkAdminElectionScope(adminScope, election)) {
+        return res.status(403).json({
+          success: false,
+          message: UNAUTHORIZED_ELECTION_MESSAGE
+        });
+      }
+    }
 
     if (
       election && (
@@ -360,7 +447,6 @@ export async function updateCandidateController(
   }
 }
 
-
 export async function deleteCandidateController(
   req,
   res
@@ -381,6 +467,16 @@ export async function deleteCandidateController(
       await findElectionById(
         candidate.election_id
       );
+
+    if (req.user?.role === "ADMIN") {
+      const adminScope = await getAdminScope(req.user.userId || req.user.id);
+      if (!checkAdminElectionScope(adminScope, election)) {
+        return res.status(403).json({
+          success: false,
+          message: UNAUTHORIZED_ELECTION_MESSAGE
+        });
+      }
+    }
 
     if (
       election && (
@@ -413,4 +509,4 @@ export async function deleteCandidateController(
         "Failed to delete candidate"
     });
   }
-}
+}

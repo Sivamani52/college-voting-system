@@ -10,6 +10,8 @@
   body {
     overflow-x: hidden;
     min-height: 100vh;
+    min-height: 100dvh;
+    background-color: #f8fafc;
   }
 
   /* Custom Clean Scrollbars */
@@ -41,6 +43,20 @@
   -webkit-overflow-scrolling: touch;
 }
 
+/* Mobile-friendly table minimum width */
+.table-container > table {
+  min-width: 600px;
+}
+
+/* Hide scrollbar for horizontal swipe tabs on mobile */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Animation helpers */
 @keyframes fadeInScale {
   from {
@@ -55,4 +71,12 @@
 
 .animate-scale-in {
   animation: fadeInScale 0.15s ease-out forwards;
+}
+
+/* Safe touch target padding helper for mobile view */
+@media (max-width: 640px) {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }

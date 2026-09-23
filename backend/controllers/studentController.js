@@ -10,12 +10,15 @@ import {
   findStudentByStudentId,
   findStudentById,
   findStudentByUserId,
-  findAllStudents
+  findAllStudents,
+  updateStudentRecord,
+  deleteStudentRecord
 } from "../models/studentModel.js";
 
 import {
-  findAdminByUserId
-} from "../models/adminModel.js";
+  getAdminScope,
+  checkAdminStudentScope
+} from "../middleware/adminScopeMiddleware.js";
 
 import {
   generateTemporaryPassword
@@ -31,7 +34,7 @@ import {
 
 export async function createStudent(req, res) {
   try {
-    const {
+    let {
       studentId,
       fullName,
       email,
@@ -42,47 +45,33 @@ export async function createStudent(req, res) {
     } = req.body;
 
     // -------------------------
-    // 1. Validate input
+    // 1. Basic validation
     // -------------------------
-    if (
-      !studentId ||
-      !fullName ||
-      !email ||
-      !departmentId ||
-      !yearId ||
-      !sectionId
-    ) {
+    if (!studentId || !fullName || !email) {
       return res.status(400).json({
-        message: "Student ID, name, email, departmentId, yearId and sectionId are required"
+        message: "Student ID, name, and email are required"
       });
     }
 
     // -------------------------
-    // 1b. Enforce ADMIN scope
+    // 1b. Enforce ADMIN scope - automatically assign Admin's section
     // -------------------------
     if (req.user?.role === "ADMIN") {
-      const admin = await findAdminByUserId(req.user.userId || req.user.id);
-      if (!admin) {
+      const adminScope = await getAdminScope(req.user.userId || req.user.id);
+      if (!adminScope || !adminScope.department_id || !adminScope.year_id || !adminScope.section_id) {
         return res.status(403).json({
-          message: "Admin profile not found"
+          message: "Admin does not have an assigned section. Please contact Super Admin."
         });
       }
 
-      if (admin.department_id !== Number(departmentId)) {
-        return res.status(403).json({
-          message: "Admins can only create students in their assigned department"
-        });
-      }
-
-      if (admin.year_id && admin.year_id !== Number(yearId)) {
-        return res.status(403).json({
-          message: "Admins can only create students in their assigned year"
-        });
-      }
-
-      if (admin.section_id && admin.section_id !== Number(sectionId)) {
-        return res.status(403).json({
-          message: "Admins can only create students in their assigned section"
+      departmentId = adminScope.department_id;
+      yearId = adminScope.year_id;
+      sectionId = adminScope.section_id;
+    } else {
+      // Super Admin must specify departmentId, yearId, sectionId
+      if (!departmentId || !yearId || !sectionId) {
+        return res.status(400).json({
+          message: "Department, Year, and Section are required"
         });
       }
     }
@@ -175,6 +164,9 @@ export async function createStudent(req, res) {
       userId,
       studentRecordId,
       studentId,
+      departmentId: Number(departmentId),
+      yearId: Number(yearId),
+      sectionId: Number(sectionId),
       temporaryPassword
     });
 
@@ -191,14 +183,18 @@ export async function getAllStudentsController(req, res) {
   try {
     let { departmentId, yearId, sectionId, status } = req.query;
 
-    // Enforce ADMIN scoping to their assigned department/year/section
+    // Enforce ADMIN scoping strictly to their assigned department + year + section
     if (req.user?.role === "ADMIN") {
-      const admin = await findAdminByUserId(req.user.userId || req.user.id);
-      if (admin) {
-        departmentId = admin.department_id;
-        if (admin.year_id) yearId = admin.year_id;
-        if (admin.section_id) sectionId = admin.section_id;
+      const adminScope = await getAdminScope(req.user.userId || req.user.id);
+      if (!adminScope) {
+        return res.status(403).json({
+          message: "Admin profile not found"
+        });
       }
+
+      departmentId = adminScope.department_id;
+      yearId = adminScope.year_id;
+      sectionId = adminScope.section_id;
     }
 
     const students = await findAllStudents({
@@ -234,15 +230,10 @@ export async function getStudentByIdController(req, res) {
 
     // Enforce ADMIN scoping
     if (req.user?.role === "ADMIN") {
-      const admin = await findAdminByUserId(req.user.userId || req.user.id);
-      if (
-        admin &&
-        (student.department_id !== admin.department_id ||
-          (admin.year_id && student.year_id !== admin.year_id) ||
-          (admin.section_id && student.section_id !== admin.section_id))
-      ) {
+      const adminScope = await getAdminScope(req.user.userId || req.user.id);
+      if (!checkAdminStudentScope(adminScope, student)) {
         return res.status(403).json({
-          message: "You do not have permission to view students outside your assigned department"
+          message: "You do not have permission to view students outside your assigned section"
         });
       }
     }
@@ -280,5 +271,120 @@ export async function getStudentProfileController(req, res) {
     return res.status(500).json({
       message: "Failed to fetch student profile"
     });
+  }
+}
+
+export async function updateStudentController(req, res) {
+  try {
+    const { id } = req.params;
+    const { fullName, departmentId, yearId, sectionId, phone } = req.body;
+
+    const student = await findStudentById(id);
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    // Scoping for ADMIN
+    if (req.user?.role === "ADMIN") {
+      const adminScope = await getAdminScope(req.user.userId || req.user.id);
+      if (!checkAdminStudentScope(adminScope, student)) {
+        return res.status(403).json({
+          message: "You do not have permission to modify students outside your assigned section"
+        });
+      }
+
+      if (departmentId && Number(departmentId) !== adminScope.department_id) {
+        return res.status(403).json({
+          message: "Cannot transfer student outside your assigned department"
+        });
+      }
+      if (yearId && Number(yearId) !== adminScope.year_id) {
+        return res.status(403).json({
+          message: "Cannot transfer student outside your assigned year"
+        });
+      }
+      if (sectionId && Number(sectionId) !== adminScope.section_id) {
+        return res.status(403).json({
+          message: "Cannot transfer student outside your assigned section"
+        });
+      }
+    }
+
+    await updateStudentRecord(id, {
+      fullName: fullName || student.full_name,
+      departmentId: departmentId || student.department_id,
+      yearId: yearId !== undefined ? yearId : student.year_id,
+      sectionId: sectionId !== undefined ? sectionId : student.section_id,
+      phone: phone !== undefined ? phone : student.phone
+    });
+
+    const updated = await findStudentById(id);
+    return res.json({
+      message: "Student updated successfully",
+      student: updated
+    });
+  } catch (error) {
+    console.error("Update student error:", error);
+    return res.status(500).json({
+      message: "Failed to update student"
+    });
+  }
+}
+
+export async function deleteStudentController(req, res) {
+  try {
+    const { id } = req.params;
+
+    const student = await findStudentById(id);
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    // Scoping for ADMIN
+    if (req.user?.role === "ADMIN") {
+      const adminScope = await getAdminScope(req.user.userId || req.user.id);
+      if (!checkAdminStudentScope(adminScope, student)) {
+        return res.status(403).json({
+          message: "You do not have permission to delete students outside your assigned section"
+        });
+      }
+    }
+
+    await deleteStudentRecord(id);
+    return res.json({ message: "Student deleted successfully" });
+  } catch (error) {
+    console.error("Delete student error:", error);
+    return res.status(500).json({ message: "Failed to delete student" });
+  }
+}
+
+export async function toggleStudentStatusController(req, res) {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!status || !["ACTIVE", "INACTIVE"].includes(status)) {
+      return res.status(400).json({ message: "Valid status (ACTIVE or INACTIVE) is required" });
+    }
+
+    const student = await findStudentById(id);
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    if (req.user?.role === "ADMIN") {
+      const adminScope = await getAdminScope(req.user.userId || req.user.id);
+      if (!checkAdminStudentScope(adminScope, student)) {
+        return res.status(403).json({
+          message: "You do not have permission to modify student status outside your assigned section"
+        });
+      }
+    }
+
+    await updateStudentRecord(id, { status });
+    return res.json({ message: `Student status updated to ${status}` });
+  } catch (error) {
+    console.error("Toggle student status error:", error);
+    return res.status(500).json({ message: "Failed to toggle student status" });
   }
 }

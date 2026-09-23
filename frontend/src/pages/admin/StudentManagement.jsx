@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useParams, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
   Users,
@@ -15,15 +16,19 @@ import {
   Mail,
   Phone,
   Hash,
-  AlertCircle,
   X,
   ShieldCheck,
   CheckCircle2,
   User,
   Eye,
   Info,
+  Edit2,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import AdminLayout from "../../components/admin/AdminLayout";
+import SuperAdminLayout from "../../components/superadmin/SuperAdminLayout";
+import { useAuth } from "../../context/useAuth";
 import Modal from "../../components/common/Modal";
 import StatCard from "../../components/common/StatCard";
 import EmptyState from "../../components/common/EmptyState";
@@ -32,9 +37,14 @@ import {
   getMyAdminProfile,
   getAllStudents,
   createStudent,
+  updateStudent,
+  deleteStudent,
+  toggleStudentStatus,
 } from "../../services/studentService";
 
 export default function StudentManagement() {
+  const { user } = useAuth();
+  const Layout = user?.role === "SUPER_ADMIN" ? SuperAdminLayout : AdminLayout;
   const [adminProfile, setAdminProfile] = useState(null);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -58,9 +68,28 @@ export default function StudentManagement() {
   });
   const [formErrors, setFormErrors] = useState({});
 
+  const params = useParams();
+  const location = useLocation();
+
   // View Student Details Modal State
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+
+  // Edit Student Modal State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingStudent, setEditingStudent] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    fullName: "",
+    phone: "",
+    yearId: "1",
+    sectionId: "1",
+  });
+  const [editLoading, setEditLoading] = useState(false);
+
+  // Delete Student Modal State
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [studentToDelete, setStudentToDelete] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Fetch Admin Profile and Students
   const loadData = useCallback(async (isInitial = false) => {
@@ -248,8 +277,97 @@ export default function StudentManagement() {
     setIsViewModalOpen(true);
   };
 
+  const handleOpenEditModal = (student) => {
+    setEditingStudent(student);
+    setEditFormData({
+      fullName: student.full_name || student.name || "",
+      phone: student.phone || "",
+      yearId: String(student.year_id || adminProfile?.year_id || "1"),
+      sectionId: String(student.section_id || adminProfile?.section_id || "1"),
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateStudent = async (e) => {
+    e.preventDefault();
+    if (!editingStudent) return;
+    if (!editFormData.fullName.trim()) {
+      toast.error("Student name is required.");
+      return;
+    }
+
+    try {
+      setEditLoading(true);
+      await updateStudent(editingStudent.id, {
+        fullName: editFormData.fullName.trim(),
+        phone: editFormData.phone.trim() || undefined,
+        yearId: Number(editFormData.yearId),
+        sectionId: Number(editFormData.sectionId),
+      });
+
+      toast.success("Student updated successfully!");
+      setIsEditModalOpen(false);
+      setEditingStudent(null);
+      await loadData(false);
+    } catch (err) {
+      console.error("Update student error:", err);
+      toast.error(err.response?.data?.message || "Failed to update student.");
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleToggleStatus = async (student) => {
+    const currentStatus = student.status || student.user_status || "ACTIVE";
+    const nextStatus = currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+
+    try {
+      await toggleStudentStatus(student.id, nextStatus);
+      toast.success(`Student marked as ${nextStatus}!`);
+      await loadData(false);
+    } catch (err) {
+      console.error("Toggle student status error:", err);
+      toast.error(err.response?.data?.message || "Failed to toggle status.");
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!studentToDelete) return;
+    try {
+      setDeleteLoading(true);
+      await deleteStudent(studentToDelete.id);
+      toast.success("Student deleted successfully!");
+      setIsDeleteModalOpen(false);
+      setStudentToDelete(null);
+      await loadData(false);
+    } catch (err) {
+      console.error("Delete student error:", err);
+      toast.error(err.response?.data?.message || "Failed to delete student.");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  // Route Synchronization Effect for /admin/students/add, /admin/students/:id, /admin/students/:id/edit
+  useEffect(() => {
+    if (location.pathname.endsWith("/add")) {
+      handleOpenModal();
+    } else if (params.id && students.length > 0) {
+      const matched = students.find(
+        (s) => String(s.id) === String(params.id) || String(s.student_id) === String(params.id)
+      );
+      if (matched) {
+        if (location.pathname.endsWith("/edit")) {
+          handleOpenEditModal(matched);
+        } else {
+          handleOpenViewModal(matched);
+        }
+      }
+    }
+  }, [location.pathname, params.id, students]);
+
   return (
-    <AdminLayout>
+    <Layout>
       <div className="space-y-6">
         {/* Header Section */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -549,30 +667,59 @@ export default function StudentManagement() {
 
                         {/* Status */}
                         <td className="py-4 px-4 sm:px-6">
-                          {isActive ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                              Active
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-600 border border-gray-200">
-                              <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
-                              Inactive
-                            </span>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleToggleStatus(student)}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border transition cursor-pointer ${
+                              isActive
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                                : "bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200"
+                            }`}
+                            title={`Click to mark as ${isActive ? "Inactive" : "Active"}`}
+                          >
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full ${
+                                isActive ? "bg-emerald-500 animate-pulse" : "bg-gray-400"
+                              }`}
+                            />
+                            {isActive ? "Active" : "Inactive"}
+                          </button>
                         </td>
 
                         {/* Actions */}
                         <td className="py-4 px-4 sm:px-6 text-right">
-                          <button
-                            type="button"
-                            onClick={() => handleOpenViewModal(student)}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs transition cursor-pointer"
-                            title="View student profile details"
-                          >
-                            <Eye size={13} />
-                            <span className="hidden sm:inline">Details</span>
-                          </button>
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenViewModal(student)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs transition cursor-pointer"
+                              title="View student profile details"
+                            >
+                              <Eye size={13} />
+                              <span className="hidden lg:inline">Details</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditModal(student)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-xs transition cursor-pointer"
+                              title="Edit student"
+                            >
+                              <Edit2 size={13} />
+                              <span className="hidden lg:inline">Edit</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setStudentToDelete(student);
+                                setIsDeleteModalOpen(true);
+                              }}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs transition cursor-pointer"
+                              title="Delete student"
+                            >
+                              <Trash2 size={13} />
+                              <span className="hidden lg:inline">Delete</span>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -690,26 +837,34 @@ export default function StudentManagement() {
           maxWidth="max-w-lg"
         >
           <form onSubmit={handleCreateStudent} className="space-y-4 text-left">
-            {/* Auto-Assigned Class Scope Info */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-3.5 text-xs text-blue-900 space-y-2 shadow-2xs">
-              <p className="font-bold text-blue-950 flex items-center gap-1.5">
-                <ShieldCheck size={14} className="text-blue-600" />
-                <span>Department Scope (Admin Profile #{adminProfile?.department_id})</span>
-              </p>
-              <div className="grid grid-cols-3 gap-2 pt-0.5 text-center">
-                <div className="bg-white rounded-xl p-2 border border-blue-100/80 shadow-2xs">
-                  <span className="block text-[10px] text-gray-400 font-bold uppercase">Dept ID</span>
-                  <strong className="text-gray-900 font-mono text-xs">{adminProfile?.department_id ?? "N/A"}</strong>
+            {/* Auto-Assigned Section Scope Info */}
+            <div className="bg-gradient-to-r from-blue-50/80 to-indigo-50/80 border border-blue-200/80 rounded-2xl p-4 text-xs text-blue-950 space-y-2 shadow-2xs">
+              <div className="flex items-center justify-between">
+                <span className="font-extrabold uppercase tracking-wider text-[11px] text-blue-900 flex items-center gap-1.5">
+                  <ShieldCheck size={15} className="text-blue-700" />
+                  Assigned Student Scope
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
+                  Locked to Your Section
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 py-1 text-center font-semibold text-xs bg-white/70 rounded-xl p-2.5 border border-blue-100">
+                <div>
+                  <span className="text-[10px] uppercase tracking-wider text-gray-500 block">Department</span>
+                  <span className="font-bold text-gray-900">{adminProfile?.department_code || adminProfile?.department_name || "CSE"}</span>
                 </div>
-                <div className="bg-white rounded-xl p-2 border border-blue-100/80 shadow-2xs">
-                  <span className="block text-[10px] text-gray-400 font-bold uppercase">Year ID</span>
-                  <strong className="text-gray-900 font-mono text-xs">{adminProfile?.year_id ? `#${adminProfile.year_id}` : "Selectable"}</strong>
+                <div>
+                  <span className="text-[10px] uppercase tracking-wider text-gray-500 block">Year</span>
+                  <span className="font-bold text-gray-900">{adminProfile?.year_name || "1st Year"}</span>
                 </div>
-                <div className="bg-white rounded-xl p-2 border border-blue-100/80 shadow-2xs">
-                  <span className="block text-[10px] text-gray-400 font-bold uppercase">Section ID</span>
-                  <strong className="text-gray-900 font-mono text-xs">{adminProfile?.section_id ? `#${adminProfile.section_id}` : "Selectable"}</strong>
+                <div>
+                  <span className="text-[10px] uppercase tracking-wider text-gray-500 block">Section</span>
+                  <span className="font-bold text-gray-900">{adminProfile?.section_name ? `Section ${adminProfile.section_name}` : "Section 1"}</span>
                 </div>
               </div>
+              <p className="text-[11px] text-blue-700 font-medium">
+                New students will automatically belong to your assigned Department, Year, and Section.
+              </p>
             </div>
 
             {/* Student ID */}
@@ -900,7 +1055,166 @@ export default function StudentManagement() {
             </div>
           </form>
         </Modal>
+
+        {/* Edit Student Modal */}
+        <Modal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setEditingStudent(null);
+          }}
+          title="Edit Student Information"
+          icon={<Edit2 size={20} className="text-amber-600" />}
+          confirmText={editLoading ? "Saving..." : "Save Changes"}
+          cancelText="Cancel"
+          onConfirm={handleUpdateStudent}
+          confirmDisabled={editLoading}
+          maxWidth="max-w-lg"
+        >
+          {editingStudent && (
+            <form onSubmit={handleUpdateStudent} className="space-y-4 text-left">
+              <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-3 text-xs text-amber-900 flex items-center gap-2">
+                <Info size={16} className="text-amber-600 shrink-0" />
+                <span>
+                  Editing student: <strong>{editingStudent.student_id || editingStudent.studentId}</strong> ({editingStudent.email})
+                </span>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="editFullName"
+                  className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1"
+                >
+                  Full Name <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <User
+                    size={15}
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
+                  />
+                  <input
+                    id="editFullName"
+                    type="text"
+                    required
+                    placeholder="e.g. John Doe"
+                    value={editFormData.fullName}
+                    onChange={(e) =>
+                      setEditFormData({ ...editFormData, fullName: e.target.value })
+                    }
+                    className="w-full pl-10 pr-3 py-2.5 bg-slate-50/70 border border-gray-300 rounded-xl text-xs sm:text-sm text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="editPhone"
+                  className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1"
+                >
+                  Phone Number
+                </label>
+                <div className="relative">
+                  <Phone
+                    size={15}
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
+                  />
+                  <input
+                    id="editPhone"
+                    type="tel"
+                    placeholder="e.g. 9876543210"
+                    value={editFormData.phone}
+                    onChange={(e) =>
+                      setEditFormData({ ...editFormData, phone: e.target.value })
+                    }
+                    className="w-full pl-10 pr-3 py-2.5 bg-slate-50/70 border border-gray-300 rounded-xl text-xs sm:text-sm text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label
+                    htmlFor="editYearSelect"
+                    className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1"
+                  >
+                    Academic Year
+                  </label>
+                  <select
+                    id="editYearSelect"
+                    value={editFormData.yearId}
+                    onChange={(e) =>
+                      setEditFormData({ ...editFormData, yearId: e.target.value })
+                    }
+                    className="w-full px-3 py-2.5 bg-slate-50/70 border border-gray-300 rounded-xl text-xs sm:text-sm text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs cursor-pointer"
+                  >
+                    <option value="1">1st Year (ID #1)</option>
+                    <option value="2">2nd Year (ID #2)</option>
+                    <option value="3">3rd Year (ID #3)</option>
+                    <option value="4">4th Year (ID #4)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="editSectionSelect"
+                    className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1"
+                  >
+                    Section
+                  </label>
+                  <select
+                    id="editSectionSelect"
+                    value={editFormData.sectionId}
+                    onChange={(e) =>
+                      setEditFormData({ ...editFormData, sectionId: e.target.value })
+                    }
+                    className="w-full px-3 py-2.5 bg-slate-50/70 border border-gray-300 rounded-xl text-xs sm:text-sm text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs cursor-pointer"
+                  >
+                    <option value="1">Section A (ID #1)</option>
+                    <option value="2">Section B (ID #2)</option>
+                    <option value="3">Section C (ID #3)</option>
+                  </select>
+                </div>
+              </div>
+            </form>
+          )}
+        </Modal>
+
+        {/* Delete Student Confirmation Modal */}
+        <Modal
+          isOpen={isDeleteModalOpen}
+          onClose={() => {
+            setIsDeleteModalOpen(false);
+            setStudentToDelete(null);
+          }}
+          title="Delete Student Record"
+          icon={<AlertTriangle size={20} className="text-rose-600" />}
+          confirmText={deleteLoading ? "Deleting..." : "Delete Student"}
+          cancelText="Cancel"
+          onConfirm={handleConfirmDelete}
+          confirmDisabled={deleteLoading}
+          danger={true}
+          maxWidth="max-w-md"
+        >
+          {studentToDelete && (
+            <div className="space-y-3 text-left">
+              <p className="text-xs sm:text-sm text-gray-600">
+                Are you sure you want to permanently delete the student account for:
+              </p>
+              <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl space-y-1">
+                <p className="font-bold text-gray-900 text-sm">
+                  {studentToDelete.full_name || studentToDelete.name}
+                </p>
+                <p className="text-xs text-gray-500 font-mono">
+                  ID: {studentToDelete.student_id || studentToDelete.studentId} • {studentToDelete.email}
+                </p>
+              </div>
+              <p className="text-[11px] text-rose-600 font-semibold">
+                Warning: This action cannot be undone and will revoke all voter privileges for this account.
+              </p>
+            </div>
+          )}
+        </Modal>
       </div>
-    </AdminLayout>
+    </Layout>
   );
 }

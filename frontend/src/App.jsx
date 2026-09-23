@@ -14,6 +14,13 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 import ChangePassword from "./pages/auth/ChangePassword";
 
 import SuperAdminDashboard from "./pages/superadmin/SuperAdminDashboard";
+import SuperAdminDepartments from "./pages/superadmin/SuperAdminDepartments";
+import SuperAdminYearsSections from "./pages/superadmin/SuperAdminYearsSections";
+import SuperAdminStudents from "./pages/superadmin/SuperAdminStudents";
+import SuperAdminAdmins from "./pages/superadmin/SuperAdminAdmins";
+import SuperAdminElections from "./pages/superadmin/SuperAdminElections";
+import SuperAdminResults from "./pages/superadmin/SuperAdminResults";
+import SuperAdminProfile from "./pages/superadmin/SuperAdminProfile";
 import ElectionResults from "./pages/superadmin/ElectionResults";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -28,6 +35,8 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import ElectionDetails from "./pages/student/ElectionDetails";
 import ConfirmVote from "./pages/student/ConfirmVote";
 import Results from "./pages/student/Results";
+import StudentProfile from "./pages/student/StudentProfile";
+import StudentElections from "./pages/student/StudentElections";
 
 function Unauthorized() {
   const storedUser = localStorage.getItem("user");
@@ -86,10 +95,23 @@ export default function App() {
             path="/change-password"
             element={<ChangePassword />}
           />
+          <Route
+            path="/update-password"
+            element={<ChangePassword />}
+          />
 
           {/* Super Admin */}
           <Route
             path="/superadmin"
+            element={
+              <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
+                <SuperAdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/superadmin/dashboard"
             element={
               <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
                 <SuperAdminDashboard />
@@ -107,6 +129,141 @@ export default function App() {
           />
 
           <Route
+            path="/super-admin/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
+                <SuperAdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/super-admin/departments"
+            element={
+              <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
+                <SuperAdminDepartments />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/superadmin/departments"
+            element={
+              <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
+                <SuperAdminDepartments />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/super-admin/years-sections"
+            element={
+              <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
+                <SuperAdminYearsSections />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/superadmin/years-sections"
+            element={
+              <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
+                <SuperAdminYearsSections />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/super-admin/students"
+            element={
+              <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
+                <SuperAdminStudents />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/superadmin/students"
+            element={
+              <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
+                <SuperAdminStudents />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/super-admin/admins"
+            element={
+              <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
+                <SuperAdminAdmins />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/superadmin/admins"
+            element={
+              <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
+                <SuperAdminAdmins />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/super-admin/elections"
+            element={
+              <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
+                <SuperAdminElections />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/superadmin/elections"
+            element={
+              <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
+                <SuperAdminElections />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/super-admin/results"
+            element={
+              <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
+                <SuperAdminResults />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/superadmin/results"
+            element={
+              <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
+                <SuperAdminResults />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/super-admin/profile"
+            element={
+              <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
+                <SuperAdminProfile />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/superadmin/profile"
+            element={
+              <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
+                <SuperAdminProfile />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
             path="/super-admin/elections/:electionId/results"
             element={
               <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
@@ -117,6 +274,24 @@ export default function App() {
 
           <Route
             path="/superadmin/elections/:electionId/results"
+            element={
+              <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
+                <ElectionResults />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/super-admin/results/:electionId"
+            element={
+              <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
+                <ElectionResults />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/superadmin/results/:electionId"
             element={
               <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
                 <ElectionResults />
@@ -146,7 +321,31 @@ export default function App() {
           <Route
             path="/admin/students"
             element={
-              <ProtectedRoute allowedRoles={["ADMIN"]}>
+              <ProtectedRoute allowedRoles={["ADMIN", "SUPER_ADMIN"]}>
+                <StudentManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/students/add"
+            element={
+              <ProtectedRoute allowedRoles={["ADMIN", "SUPER_ADMIN"]}>
+                <StudentManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/students/:id"
+            element={
+              <ProtectedRoute allowedRoles={["ADMIN", "SUPER_ADMIN"]}>
+                <StudentManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/students/:id/edit"
+            element={
+              <ProtectedRoute allowedRoles={["ADMIN", "SUPER_ADMIN"]}>
                 <StudentManagement />
               </ProtectedRoute>
             }
@@ -154,6 +353,22 @@ export default function App() {
 
           <Route
             path="/admin/elections"
+            element={
+              <ProtectedRoute allowedRoles={["ADMIN"]}>
+                <ElectionManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/elections/add"
+            element={
+              <ProtectedRoute allowedRoles={["ADMIN"]}>
+                <ElectionManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/elections/:id"
             element={
               <ProtectedRoute allowedRoles={["ADMIN"]}>
                 <ElectionManagement />
@@ -203,6 +418,24 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={["STUDENT"]}>
                 <StudentDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/student/elections"
+            element={
+              <ProtectedRoute allowedRoles={["STUDENT"]}>
+                <StudentElections />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/student/profile"
+            element={
+              <ProtectedRoute allowedRoles={["STUDENT"]}>
+                <StudentProfile />
               </ProtectedRoute>
             }
           />

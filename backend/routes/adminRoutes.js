@@ -3,7 +3,10 @@ import express from "express";
 import {
   createAdmin,
   getAllAdminsController,
-  getAdminProfileController
+  getAdminProfileController,
+  updateAdminController,
+  toggleAdminStatusController,
+  deleteAdminController,
 } from "../controllers/adminController.js";
 
 import {
@@ -38,6 +41,30 @@ router.get(
   authenticateToken,
   authorizeRoles("SUPER_ADMIN"),
   getAllAdminsController
+);
+
+// Update admin (Super Admin only)
+router.put(
+  "/:id",
+  authenticateToken,
+  authorizeRoles("SUPER_ADMIN"),
+  updateAdminController
+);
+
+// Toggle admin status ACTIVE/INACTIVE (Super Admin only)
+router.patch(
+  "/:id/status",
+  authenticateToken,
+  authorizeRoles("SUPER_ADMIN"),
+  toggleAdminStatusController
+);
+
+// Delete admin (Super Admin only)
+router.delete(
+  "/:id",
+  authenticateToken,
+  authorizeRoles("SUPER_ADMIN"),
+  deleteAdminController
 );
 
 export default router;

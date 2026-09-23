@@ -1,5 +1,12 @@
 import pool from '../config/db.js'
 import * as voteModel from '../models/voteModel.js'
+import {
+  getAdminScope,
+  checkAdminElectionScope,
+  checkStudentElectionScope,
+  UNAUTHORIZED_ELECTION_MESSAGE,
+  STUDENT_UNAUTHORIZED_ELECTION_MESSAGE
+} from '../middleware/adminScopeMiddleware.js'
 
 // ==========================================
 // SUBMIT VOTES (Single Transaction API)
@@ -94,7 +101,7 @@ export async function submitVotes(req, res) {
     // 3. Verify student exists and is ACTIVE
     // ------------------------------------------------
     const [studentRows] = await pool.query(
-      `SELECT id, user_id, student_id, full_name, status
+      `SELECT id, user_id, student_id, full_name, department_id, year_id, section_id, status
        FROM students
        WHERE user_id = ?
        LIMIT 1`,
@@ -139,6 +146,15 @@ export async function submitVotes(req, res) {
       await connection.rollback()
       return res.status(400).json({
         message: `Voting is not active for this election. Current status: ${election.status}.`
+      })
+    }
+
+    // Strictly enforce student section scope: election must belong to student's section or be college-wide
+    if (!checkStudentElectionScope(student, election)) {
+      await connection.rollback()
+      return res.status(403).json({
+        success: false,
+        message: STUDENT_UNAUTHORIZED_ELECTION_MESSAGE
       })
     }
 
@@ -289,7 +305,7 @@ export async function getMyVotesController(req, res) {
     const userId = req.user?.userId || req.user?.id
 
     const [studentRows] = await pool.query(
-      `SELECT id FROM students WHERE user_id = ? LIMIT 1`,
+      `SELECT id, department_id, year_id, section_id FROM students WHERE user_id = ? LIMIT 1`,
       [userId]
     )
 
@@ -299,7 +315,23 @@ export async function getMyVotesController(req, res) {
       })
     }
 
-    const studentId = studentRows[0].id
+    const student = studentRows[0]
+    const election = await voteModel.getElectionById(electionId)
+    if (!election) {
+      return res.status(404).json({
+        message: 'Election not found.'
+      })
+    }
+
+    // Strictly enforce student section scope
+    if (!checkStudentElectionScope(student, election)) {
+      return res.status(403).json({
+        success: false,
+        message: STUDENT_UNAUTHORIZED_ELECTION_MESSAGE
+      })
+    }
+
+    const studentId = student.id
     const votes = await voteModel.getStudentVotesInElection(electionId, studentId)
 
     return res.json({
@@ -323,6 +355,7 @@ export async function getElectionResultsController(req, res) {
   try {
     const { electionId } = req.params
     const userRole = req.user?.role
+    const userId = req.user?.userId || req.user?.id
 
     if (!electionId || isNaN(Number(electionId))) {
       return res.status(400).json({
@@ -337,11 +370,34 @@ export async function getElectionResultsController(req, res) {
       })
     }
 
-    // Students can only see results if status is RESULT_PUBLISHED
-    if (userRole === 'STUDENT' && election.status !== 'RESULT_PUBLISHED') {
-      return res.status(403).json({
-        message: 'Results have not been published for this election yet.'
-      })
+    // Enforce Admin section scope
+    if (userRole === 'ADMIN') {
+      const adminScope = await getAdminScope(userId)
+      if (!checkAdminElectionScope(adminScope, election)) {
+        return res.status(403).json({
+          success: false,
+          message: UNAUTHORIZED_ELECTION_MESSAGE
+        })
+      }
+    } else if (userRole === 'STUDENT') {
+      const [studentRows] = await pool.query(
+        `SELECT id, department_id, year_id, section_id FROM students WHERE user_id = ? LIMIT 1`,
+        [userId]
+      )
+      const student = studentRows[0]
+      if (!student || !checkStudentElectionScope(student, election)) {
+        return res.status(403).json({
+          success: false,
+          message: STUDENT_UNAUTHORIZED_ELECTION_MESSAGE
+        })
+      }
+
+      // Students can only see results if status is RESULT_PUBLISHED
+      if (election.status !== 'RESULT_PUBLISHED') {
+        return res.status(403).json({
+          message: 'Results have not been published for this election yet.'
+        })
+      }
     }
 
     const results = await voteModel.getElectionResults(electionId)
@@ -354,7 +410,10 @@ export async function getElectionResultsController(req, res) {
         description: election.description,
         status: election.status,
         startDate: election.start_date,
-        endDate: election.end_date
+        endDate: election.end_date,
+        departmentId: election.department_id,
+        yearId: election.year_id,
+        sectionId: election.section_id
       },
       stats,
       results
@@ -374,6 +433,8 @@ export async function getElectionResultsController(req, res) {
 export async function getElectionStatsController(req, res) {
   try {
     const { electionId } = req.params
+    const userRole = req.user?.role
+    const userId = req.user?.userId || req.user?.id
 
     if (!electionId || isNaN(Number(electionId))) {
       return res.status(400).json({
@@ -386,6 +447,29 @@ export async function getElectionStatsController(req, res) {
       return res.status(404).json({
         message: 'Election not found.'
       })
+    }
+
+    // Enforce Admin section scope
+    if (userRole === 'ADMIN') {
+      const adminScope = await getAdminScope(userId)
+      if (!checkAdminElectionScope(adminScope, election)) {
+        return res.status(403).json({
+          success: false,
+          message: UNAUTHORIZED_ELECTION_MESSAGE
+        })
+      }
+    } else if (userRole === 'STUDENT') {
+      const [studentRows] = await pool.query(
+        `SELECT id, department_id, year_id, section_id FROM students WHERE user_id = ? LIMIT 1`,
+        [userId]
+      )
+      const student = studentRows[0]
+      if (!student || !checkStudentElectionScope(student, election)) {
+        return res.status(403).json({
+          success: false,
+          message: STUDENT_UNAUTHORIZED_ELECTION_MESSAGE
+        })
+      }
     }
 
     const stats = await voteModel.getElectionStats(electionId)

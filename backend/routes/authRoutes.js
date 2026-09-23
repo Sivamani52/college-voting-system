@@ -8,6 +8,8 @@ import {
   changePassword
 } from "../controllers/authController.js";
 
+import { optionalAuthenticateToken } from "../middleware/authMiddleware.js";
+
 const router = express.Router();
 
 // Normal login
@@ -24,6 +26,7 @@ router.post("/reset-password", resetPassword);
 
 router.post(
   "/change-password",
+  optionalAuthenticateToken,
   changePassword
 );
 

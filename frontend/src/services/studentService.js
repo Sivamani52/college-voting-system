@@ -25,6 +25,24 @@ export const createStudent = async (studentData) => {
   return response.data;
 };
 
+// Update existing student
+export const updateStudent = async (id, studentData) => {
+  const response = await api.put(`/students/${id}`, studentData);
+  return response.data;
+};
+
+// Delete student
+export const deleteStudent = async (id) => {
+  const response = await api.delete(`/students/${id}`);
+  return response.data;
+};
+
+// Toggle student status
+export const toggleStudentStatus = async (id, status) => {
+  const response = await api.patch(`/students/${id}/status`, { status });
+  return response.data;
+};
+
 // Change Password
 export const changePassword = async ({ userId, currentPassword, newPassword }) => {
   const response = await api.post("/auth/change-password", {

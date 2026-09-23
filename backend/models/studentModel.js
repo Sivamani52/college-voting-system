@@ -11,7 +11,17 @@ export async function findStudentByStudentId(studentId) {
 
 export async function findStudentByUserId(userId) {
   const [rows] = await pool.query(
-    "SELECT * FROM students WHERE user_id = ? LIMIT 1",
+    `SELECT s.*, u.email, u.role, u.status AS user_status,
+            d.name AS department_name, d.code AS department_code,
+            y.name AS year_name,
+            sec.name AS section_name
+     FROM students s
+     JOIN users u ON s.user_id = u.id
+     LEFT JOIN departments d ON d.id = s.department_id
+     LEFT JOIN years y ON y.id = s.year_id
+     LEFT JOIN sections sec ON sec.id = s.section_id
+     WHERE s.user_id = ?
+     LIMIT 1`,
     [userId]
   );
 
@@ -49,9 +59,15 @@ export async function createStudentRecord({
 
 export async function findStudentById(id) {
   const [rows] = await pool.query(
-    `SELECT s.*, u.email, u.role, u.status AS user_status
+    `SELECT s.*, u.email, u.role, u.status AS user_status,
+            d.name AS department_name, d.code AS department_code,
+            y.name AS year_name,
+            sec.name AS section_name
      FROM students s
      JOIN users u ON s.user_id = u.id
+     LEFT JOIN departments d ON d.id = s.department_id
+     LEFT JOIN years y ON y.id = s.year_id
+     LEFT JOIN sections sec ON sec.id = s.section_id
      WHERE (s.id = ? OR s.student_id = ?)
      LIMIT 1`,
     [id, id]
@@ -62,9 +78,15 @@ export async function findStudentById(id) {
 
 export async function findAllStudents({ departmentId, yearId, sectionId, status } = {}) {
   let query = `
-    SELECT s.*, u.email, u.status AS user_status
+    SELECT s.*, u.email, u.status AS user_status,
+           d.name AS department_name, d.code AS department_code,
+           y.name AS year_name,
+           sec.name AS section_name
     FROM students s
     JOIN users u ON s.user_id = u.id
+    LEFT JOIN departments d ON d.id = s.department_id
+    LEFT JOIN years y ON y.id = s.year_id
+    LEFT JOIN sections sec ON sec.id = s.section_id
     WHERE 1=1
   `;
   const params = [];
@@ -90,4 +112,53 @@ export async function findAllStudents({ departmentId, yearId, sectionId, status 
 
   const [rows] = await pool.query(query, params);
   return rows;
+}
+
+export async function updateStudentRecord(id, { fullName, departmentId, yearId, sectionId, phone, status }) {
+  const fields = [];
+  const params = [];
+
+  if (fullName !== undefined) {
+    fields.push("full_name = ?");
+    params.push(fullName.trim());
+  }
+  if (departmentId !== undefined) {
+    fields.push("department_id = ?");
+    params.push(Number(departmentId));
+  }
+  if (yearId !== undefined) {
+    fields.push("year_id = ?");
+    params.push(Number(yearId));
+  }
+  if (sectionId !== undefined) {
+    fields.push("section_id = ?");
+    params.push(Number(sectionId));
+  }
+  if (phone !== undefined) {
+    fields.push("phone = ?");
+    params.push(phone ? phone.trim() : null);
+  }
+  if (status !== undefined) {
+    fields.push("status = ?");
+    params.push(status);
+  }
+
+  if (fields.length === 0) return 0;
+
+  params.push(id);
+  const [result] = await pool.query(
+    `UPDATE students SET ${fields.join(", ")} WHERE id = ?`,
+    params
+  );
+
+  return result.affectedRows;
+}
+
+export async function deleteStudentRecord(id) {
+  const student = await findStudentById(id);
+  if (!student) return 0;
+
+  // Deleting user cascades to student, eligible_voters, votes
+  const [result] = await pool.query(`DELETE FROM users WHERE id = ?`, [student.user_id]);
+  return result.affectedRows;
 }

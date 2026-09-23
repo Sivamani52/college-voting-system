@@ -4,6 +4,7 @@ import {
   createElectionController,
   getAllElections,
   getElectionById,
+  updateElectionController,
   changeElectionStatus,
   deleteElectionController
 } from "../controllers/electionController.js";
@@ -18,14 +19,13 @@ import {
 
 const router = express.Router();
 
-
+// Create election (Super Admin, Admin)
 router.post(
   "/",
   authenticateToken,
   authorizeRoles("SUPER_ADMIN", "ADMIN"),
   createElectionController
 );
-
 
 // Get all elections (Super Admin, Admin, Student)
 router.get(
@@ -35,7 +35,6 @@ router.get(
   getAllElections
 );
 
-
 // Get election by ID (Super Admin, Admin, Student)
 router.get(
   "/:id",
@@ -44,10 +43,46 @@ router.get(
   getElectionById
 );
 
-
+// Update election details (Super Admin, Admin)
+router.put(
+  "/:id",
+  authenticateToken,
+  authorizeRoles("SUPER_ADMIN", "ADMIN"),
+  updateElectionController
+);
 
 router.patch(
+  "/:id",
+  authenticateToken,
+  authorizeRoles("SUPER_ADMIN", "ADMIN"),
+  updateElectionController
+);
+
+// Change election status (Super Admin, Admin)
+router.patch(
   "/:id/status",
+  authenticateToken,
+  authorizeRoles("SUPER_ADMIN", "ADMIN"),
+  changeElectionStatus
+);
+
+// Specific status transition action aliases
+router.post(
+  "/:id/activate",
+  authenticateToken,
+  authorizeRoles("SUPER_ADMIN", "ADMIN"),
+  changeElectionStatus
+);
+
+router.post(
+  "/:id/close",
+  authenticateToken,
+  authorizeRoles("SUPER_ADMIN", "ADMIN"),
+  changeElectionStatus
+);
+
+router.post(
+  "/:id/publish-results",
   authenticateToken,
   authorizeRoles("SUPER_ADMIN", "ADMIN"),
   changeElectionStatus
