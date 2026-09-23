@@ -17,39 +17,76 @@ import academicStructureRoutes from "./routes/academicStructureRoutes.js";
 import path from "path";
 import { fileURLToPath } from "url";
 
+import fs from "fs";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, "./.env") });
 
 const app = express();
 
-app.use(cors());
+// Configure CORS for production and development
+const configuredOrigins = [
+  process.env.CLIENT_URL,
+  process.env.FRONTEND_URL,
+  ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",") : [])
+]
+  .filter(Boolean)
+  .map(url => url.trim().replace(/\/$/, ""));
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (curl, mobile, server-to-server)
+      if (!origin) return callback(null, true);
+
+      // If no origins configured, allow all origins
+      if (configuredOrigins.length === 0 || configuredOrigins.includes("*")) {
+        return callback(null, true);
+      }
+
+      const normalizedOrigin = origin.replace(/\/$/, "");
+      const isAllowed =
+        configuredOrigins.includes(normalizedOrigin) ||
+        normalizedOrigin.startsWith("http://localhost:") ||
+        normalizedOrigin.startsWith("http://127.0.0.1:");
+
+      if (isAllowed) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
+    credentials: true
+  })
+);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use("/api/auth",authRouter);
+// Health Check Endpoint (useful for cloud platforms like Render, Railway, AWS)
+app.get("/api/health", (req, res) => {
+  res.json({
+    status: "ok",
+    service: "college-voting-api",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
+app.use("/api/auth", authRouter);
 app.use("/api/test", testRoutes);
 app.use("/api/admins", adminRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/elections", electionRoutes);
 app.use("/api/admin/elections", electionRoutes);
-app.use("/api/positions",positionRoutes);
-app.use("/api/candidates",candidateRoutes);
-app.use("/api/eligible-voters",eligibleVoterRoutes);
+app.use("/api/positions", positionRoutes);
+app.use("/api/candidates", candidateRoutes);
+app.use("/api/eligible-voters", eligibleVoterRoutes);
 app.use("/api/votes", voteRoutes);
 app.use("/api/results", resultRoutes);
 app.use("/api/departments", departmentRoutes);
 app.use("/api", academicStructureRoutes);
-
-
-
-
-
-app.get("/", (req, res) => {
-  res.json({
-    message: "College Voting System API is running"
-  });
-});
 
 app.get("/api/test-db", async (req, res) => {
   try {
@@ -67,6 +104,27 @@ app.get("/api/test-db", async (req, res) => {
     });
   }
 });
+
+// In production, serve the compiled Vite frontend if available
+const frontendDistPath = path.resolve(__dirname, "../frontend/dist");
+const hasFrontendDist = fs.existsSync(path.join(frontendDistPath, "index.html"));
+
+if (process.env.NODE_ENV === "production" && hasFrontendDist) {
+  app.use(express.static(frontendDistPath));
+
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api")) {
+      return next();
+    }
+    res.sendFile(path.join(frontendDistPath, "index.html"));
+  });
+} else {
+  app.get("/", (req, res) => {
+    res.json({
+      message: "College Voting System API is running"
+    });
+  });
+}
 
 // 404 handler for unhandled API routes (compatible with Express 5)
 app.use("/api", (req, res) => {
