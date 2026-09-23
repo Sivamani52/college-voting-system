@@ -837,26 +837,34 @@ export default function StudentManagement() {
           maxWidth="max-w-lg"
         >
           <form onSubmit={handleCreateStudent} className="space-y-4 text-left">
-            {/* Auto-Assigned Class Scope Info */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-3.5 text-xs text-blue-900 space-y-2 shadow-2xs">
-              <p className="font-bold text-blue-950 flex items-center gap-1.5">
-                <ShieldCheck size={14} className="text-blue-600" />
-                <span>Department Scope (Admin Profile #{adminProfile?.department_id})</span>
-              </p>
-              <div className="grid grid-cols-3 gap-2 pt-0.5 text-center">
-                <div className="bg-white rounded-xl p-2 border border-blue-100/80 shadow-2xs">
-                  <span className="block text-[10px] text-gray-400 font-bold uppercase">Dept ID</span>
-                  <strong className="text-gray-900 font-mono text-xs">{adminProfile?.department_id ?? "N/A"}</strong>
+            {/* Auto-Assigned Section Scope Info */}
+            <div className="bg-gradient-to-r from-blue-50/80 to-indigo-50/80 border border-blue-200/80 rounded-2xl p-4 text-xs text-blue-950 space-y-2 shadow-2xs">
+              <div className="flex items-center justify-between">
+                <span className="font-extrabold uppercase tracking-wider text-[11px] text-blue-900 flex items-center gap-1.5">
+                  <ShieldCheck size={15} className="text-blue-700" />
+                  Assigned Student Scope
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
+                  Locked to Your Section
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 py-1 text-center font-semibold text-xs bg-white/70 rounded-xl p-2.5 border border-blue-100">
+                <div>
+                  <span className="text-[10px] uppercase tracking-wider text-gray-500 block">Department</span>
+                  <span className="font-bold text-gray-900">{adminProfile?.department_code || adminProfile?.department_name || "CSE"}</span>
                 </div>
-                <div className="bg-white rounded-xl p-2 border border-blue-100/80 shadow-2xs">
-                  <span className="block text-[10px] text-gray-400 font-bold uppercase">Year ID</span>
-                  <strong className="text-gray-900 font-mono text-xs">{adminProfile?.year_id ? `#${adminProfile.year_id}` : "Selectable"}</strong>
+                <div>
+                  <span className="text-[10px] uppercase tracking-wider text-gray-500 block">Year</span>
+                  <span className="font-bold text-gray-900">{adminProfile?.year_name || "1st Year"}</span>
                 </div>
-                <div className="bg-white rounded-xl p-2 border border-blue-100/80 shadow-2xs">
-                  <span className="block text-[10px] text-gray-400 font-bold uppercase">Section ID</span>
-                  <strong className="text-gray-900 font-mono text-xs">{adminProfile?.section_id ? `#${adminProfile.section_id}` : "Selectable"}</strong>
+                <div>
+                  <span className="text-[10px] uppercase tracking-wider text-gray-500 block">Section</span>
+                  <span className="font-bold text-gray-900">{adminProfile?.section_name ? `Section ${adminProfile.section_name}` : "Section 1"}</span>
                 </div>
               </div>
+              <p className="text-[11px] text-blue-700 font-medium">
+                New students will automatically belong to your assigned Department, Year, and Section.
+              </p>
             </div>
 
             {/* Student ID */}

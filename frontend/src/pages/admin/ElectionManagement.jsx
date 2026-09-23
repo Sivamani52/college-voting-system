@@ -508,6 +508,12 @@ export default function ElectionManagement() {
     setResultsData(null);
 
     try {
+      // First verify access to this election through backend
+      const freshRes = await getElectionById(election.id);
+      if (freshRes?.election) {
+        setSelectedElection(freshRes.election);
+      }
+
       const [posRes, candRes, votersRes, statsRes, resRes] =
         await Promise.allSettled([
           getPositionsByElection(election.id),
@@ -537,8 +543,17 @@ export default function ElectionManagement() {
       if (resRes.status === "fulfilled") {
         setResultsData(resRes.value?.results || resRes.value || null);
       }
-    } catch {
-      toast.error("Some election details could not be loaded.");
+    } catch (err) {
+      if (err?.response?.status === 403) {
+        toast.error(
+          err?.response?.data?.message ||
+          "You are not authorized to access this election. This election does not belong to your assigned section."
+        );
+        setIsDetailsModalOpen(false);
+        setSelectedElection(null);
+      } else {
+        toast.error("Some election details could not be loaded.");
+      }
     } finally {
       setDetailsLoading(false);
     }
@@ -718,22 +733,37 @@ export default function ElectionManagement() {
     <AdminLayout>
       <div className="space-y-6 max-w-7xl pb-12">
         {/* Header Section */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
+        <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200/80 shadow-2xs p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-5">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-100 uppercase tracking-wider">
-                <Vote size={12} /> Department Elections
+                <Vote size={12} /> Section-Scoped Elections
               </span>
             </div>
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-gray-900 tracking-tight">
               Election Management
             </h1>
-            <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
-              Create and manage department elections, positions, candidates, and voter rolls.
+            <p className="text-xs sm:text-sm text-gray-500">
+              Create and manage elections, positions, candidates, and voter rolls for your assigned section.
             </p>
+
+            {/* Assigned Section Badge/Card */}
+            <div className="inline-flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 bg-gradient-to-r from-slate-50 to-blue-50/50 border border-blue-100/80 rounded-xl px-3.5 py-2 mt-1">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-500">
+                <ShieldCheck size={15} className="text-blue-600" />
+                <span>Your Assigned Section:</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-blue-900">
+                <span>{adminProfile?.department_code || adminProfile?.department_name || "CSE"}</span>
+                <span className="text-blue-300">•</span>
+                <span>{adminProfile?.year_name || "1st Year"}</span>
+                <span className="text-blue-300">•</span>
+                <span>{adminProfile?.section_name ? `Section ${adminProfile.section_name}` : "Section 1"}</span>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2.5 shrink-0">
+          <div className="flex items-center gap-2.5 shrink-0 self-start md:self-center">
             <button
               type="button"
               onClick={() => loadData(false)}
@@ -1005,8 +1035,8 @@ export default function ElectionManagement() {
           onClose={() => {
             if (!createLoading) setIsCreateModalOpen(false);
           }}
-          title="Create Department Election"
-          subtitle="Set up title, schedule dates, and positions"
+          title="Create Section Election"
+          subtitle="Set up title, schedule dates, and positions for your section"
           icon={<Vote size={24} className="text-blue-600" />}
           confirmText={createLoading ? "Creating..." : "Create Election"}
           cancelText="Cancel"
@@ -1014,14 +1044,33 @@ export default function ElectionManagement() {
           confirmDisabled={createLoading}
         >
           <form onSubmit={handleCreateElectionSubmit} className="space-y-4 text-left">
-            {/* Scoped Department Banner */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-3.5 text-xs text-blue-900 space-y-1 shadow-2xs">
-              <p className="font-bold flex items-center gap-1.5 text-blue-950">
-                <ShieldCheck size={14} className="text-blue-700" />
-                Department Scoped Election (Dept ID #{adminProfile?.department_id || "1"})
-              </p>
-              <p className="text-[11px] text-blue-800 leading-relaxed">
-                Creates an election for your department. Active students in your department can be auto-enrolled as eligible voters.
+            {/* Read-Only Election Scope Banner */}
+            <div className="bg-gradient-to-r from-blue-50/80 to-indigo-50/80 border border-blue-200/80 rounded-2xl p-4 text-xs text-blue-950 space-y-2 shadow-2xs">
+              <div className="flex items-center justify-between">
+                <span className="font-extrabold uppercase tracking-wider text-[11px] text-blue-900 flex items-center gap-1.5">
+                  <ShieldCheck size={15} className="text-blue-700" />
+                  Election Scope
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
+                  Assigned Section
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 py-1 text-center font-semibold text-xs bg-white/70 rounded-xl p-2.5 border border-blue-100">
+                <div>
+                  <span className="text-[10px] uppercase tracking-wider text-gray-500 block">Department</span>
+                  <span className="font-bold text-gray-900">{adminProfile?.department_code || adminProfile?.department_name || "CSE"}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase tracking-wider text-gray-500 block">Year</span>
+                  <span className="font-bold text-gray-900">{adminProfile?.year_name || "1st Year"}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase tracking-wider text-gray-500 block">Section</span>
+                  <span className="font-bold text-gray-900">{adminProfile?.section_name ? `Section ${adminProfile.section_name}` : "Section 1"}</span>
+                </div>
+              </div>
+              <p className="text-[11px] text-blue-700 font-medium">
+                This election will be managed by your assigned section.
               </p>
             </div>
 

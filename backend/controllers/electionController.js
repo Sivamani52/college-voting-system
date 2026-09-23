@@ -2,10 +2,19 @@ import {
   createElection,
   findAllElections,
   findElectionById,
+  updateElectionDetails,
   updateElectionStatus,
   deleteElection
 } from "../models/electionModel.js";
-
+import {
+  getAdminScope,
+  checkAdminElectionScope,
+  checkStudentElectionScope,
+  UNAUTHORIZED_ELECTION_MESSAGE,
+  STUDENT_UNAUTHORIZED_ELECTION_MESSAGE
+} from "../middleware/adminScopeMiddleware.js";
+import { findStudentByUserId } from "../models/studentModel.js";
+import { isEligibleVoter } from "../models/voteModel.js";
 
 export async function createElectionController(req, res) {
   try {
@@ -42,11 +51,38 @@ export async function createElectionController(req, res) {
       });
     }
 
+    let departmentId = null;
+    let yearId = null;
+    let sectionId = null;
+
+    // Enforce ADMIN scoping from database - never trust client input
+    if (req.user?.role === "ADMIN") {
+      const adminScope = await getAdminScope(createdBy);
+      if (!adminScope || !adminScope.department_id || !adminScope.year_id || !adminScope.section_id) {
+        return res.status(403).json({
+          success: false,
+          message: "Admin does not have an assigned section. Please contact Super Admin."
+        });
+      }
+
+      departmentId = adminScope.department_id;
+      yearId = adminScope.year_id;
+      sectionId = adminScope.section_id;
+    } else if (req.user?.role === "SUPER_ADMIN") {
+      // Super Admin can optionally create election for a specific section or leave null
+      departmentId = req.body.departmentId || req.body.department_id || null;
+      yearId = req.body.yearId || req.body.year_id || null;
+      sectionId = req.body.sectionId || req.body.section_id || null;
+    }
+
     const electionId = await createElection({
       title,
       description,
       startDate: start,
       endDate: end,
+      departmentId,
+      yearId,
+      sectionId,
       createdBy
     });
 
@@ -64,18 +100,53 @@ export async function createElectionController(req, res) {
   }
 }
 
-
 export async function getAllElections(req, res) {
   try {
+    const userRole = req.user?.role;
+    const userId = req.user?.userId || req.user?.id;
 
-    const elections = await findAllElections();
+    let filterOptions = {};
+
+    if (userRole === "ADMIN") {
+      const adminScope = await getAdminScope(userId);
+      if (!adminScope) {
+        return res.status(403).json({
+          message: "Admin profile not found"
+        });
+      }
+
+      // Strictly return only elections belonging to Admin's assigned Department + Year + Section
+      filterOptions = {
+        departmentId: adminScope.department_id,
+        yearId: adminScope.year_id,
+        sectionId: adminScope.section_id
+      };
+    } else if (userRole === "STUDENT") {
+      const student = await findStudentByUserId(userId);
+      if (!student) {
+        return res.status(404).json({
+          message: "Student record not found"
+        });
+      }
+
+      // Students only see elections belonging to their assigned section (or college-wide) where they are registered as eligible voters, excluding DRAFT
+      filterOptions = {
+        studentId: student.id,
+        studentDepartmentId: student.department_id,
+        studentYearId: student.year_id,
+        studentSectionId: student.section_id,
+        excludeDrafts: true
+      };
+    }
+    // SUPER_ADMIN has filterOptions = {} (all elections)
+
+    const elections = await findAllElections(filterOptions);
 
     return res.json({
       elections
     });
 
   } catch (error) {
-
     console.error("Get elections error:", error);
 
     return res.status(500).json({
@@ -84,13 +155,9 @@ export async function getAllElections(req, res) {
   }
 }
 
-
 export async function getElectionById(req, res) {
   try {
-
-    const election = await findElectionById(
-      req.params.id
-    );
+    const election = await findElectionById(req.params.id);
 
     if (!election) {
       return res.status(404).json({
@@ -98,12 +165,52 @@ export async function getElectionById(req, res) {
       });
     }
 
+    const userRole = req.user?.role;
+    const userId = req.user?.userId || req.user?.id;
+
+    if (userRole === "ADMIN") {
+      const adminScope = await getAdminScope(userId);
+      if (!checkAdminElectionScope(adminScope, election)) {
+        return res.status(403).json({
+          success: false,
+          message: UNAUTHORIZED_ELECTION_MESSAGE
+        });
+      }
+    } else if (userRole === "STUDENT") {
+      if (election.status === "DRAFT") {
+        return res.status(403).json({
+          message: "Students cannot view draft elections"
+        });
+      }
+
+      const student = await findStudentByUserId(userId);
+      if (!student) {
+        return res.status(404).json({
+          message: "Student profile not found"
+        });
+      }
+
+      // Strictly verify election belongs to student's section or is college-wide
+      if (!checkStudentElectionScope(student, election)) {
+        return res.status(403).json({
+          success: false,
+          message: STUDENT_UNAUTHORIZED_ELECTION_MESSAGE
+        });
+      }
+
+      const eligible = await isEligibleVoter(election.id, student.id);
+      if (!eligible) {
+        return res.status(403).json({
+          message: "You are not registered as an eligible voter for this election."
+        });
+      }
+    }
+
     return res.json({
       election
     });
 
   } catch (error) {
-
     console.error("Get election error:", error);
 
     return res.status(500).json({
@@ -112,10 +219,83 @@ export async function getElectionById(req, res) {
   }
 }
 
+export async function updateElectionController(req, res) {
+  try {
+    const { id } = req.params;
+    const election = await findElectionById(id);
+
+    if (!election) {
+      return res.status(404).json({
+        message: "Election not found"
+      });
+    }
+
+    const userRole = req.user?.role;
+    const userId = req.user?.userId || req.user?.id;
+
+    if (userRole === "ADMIN") {
+      const adminScope = await getAdminScope(userId);
+      if (!checkAdminElectionScope(adminScope, election)) {
+        return res.status(403).json({
+          success: false,
+          message: UNAUTHORIZED_ELECTION_MESSAGE
+        });
+      }
+    }
+
+    // Don't allow changing details after election has started
+    if (["ACTIVE", "CLOSED", "RESULT_PUBLISHED"].includes(election.status)) {
+      return res.status(400).json({
+        message: `Cannot update election details when election is in ${election.status} status`
+      });
+    }
+
+    const { title, description, startDate, endDate, start_date, end_date } = req.body;
+    const finalStartDate = startDate || start_date;
+    const finalEndDate = endDate || end_date;
+
+    if (finalStartDate && finalEndDate) {
+      const start = new Date(finalStartDate);
+      const end = new Date(finalEndDate);
+      if (end <= start) {
+        return res.status(400).json({
+          message: "End date must be after start date"
+        });
+      }
+    }
+
+    await updateElectionDetails(id, {
+      title,
+      description,
+      startDate: finalStartDate,
+      endDate: finalEndDate
+    });
+
+    const updated = await findElectionById(id);
+    return res.json({
+      message: "Election updated successfully",
+      election: updated
+    });
+
+  } catch (error) {
+    console.error("Update election error:", error);
+    return res.status(500).json({
+      message: "Failed to update election"
+    });
+  }
+}
 
 export async function changeElectionStatus(req, res) {
   try {
-    const { status } = req.body;
+    const { id } = req.params;
+    let status = req.body.status;
+
+    // Support action endpoint aliases if status is not explicitly passed in body
+    if (!status) {
+      if (req.path.endsWith("/activate")) status = "ACTIVE";
+      else if (req.path.endsWith("/close")) status = "CLOSED";
+      else if (req.path.endsWith("/publish-results")) status = "RESULT_PUBLISHED";
+    }
 
     const allowedStatuses = [
       "DRAFT",
@@ -131,14 +311,25 @@ export async function changeElectionStatus(req, res) {
       });
     }
 
-    const election = await findElectionById(
-      req.params.id
-    );
+    const election = await findElectionById(id);
 
     if (!election) {
       return res.status(404).json({
         message: "Election not found"
       });
+    }
+
+    const userRole = req.user?.role;
+    const userId = req.user?.userId || req.user?.id;
+
+    if (userRole === "ADMIN") {
+      const adminScope = await getAdminScope(userId);
+      if (!checkAdminElectionScope(adminScope, election)) {
+        return res.status(403).json({
+          success: false,
+          message: UNAUTHORIZED_ELECTION_MESSAGE
+        });
+      }
     }
 
     if (election.status === status) {
@@ -164,10 +355,7 @@ export async function changeElectionStatus(req, res) {
       });
     }
 
-    await updateElectionStatus(
-      req.params.id,
-      status
-    );
+    await updateElectionStatus(id, status);
 
     return res.json({
       message: "Election status updated successfully",
@@ -176,10 +364,7 @@ export async function changeElectionStatus(req, res) {
     });
 
   } catch (error) {
-    console.error(
-      "Update election status error:",
-      error
-    );
+    console.error("Update election status error:", error);
 
     return res.status(500).json({
       message: "Failed to update election status"
@@ -196,6 +381,19 @@ export async function deleteElectionController(req, res) {
       return res.status(404).json({
         message: "Election not found"
       });
+    }
+
+    const userRole = req.user?.role;
+    const userId = req.user?.userId || req.user?.id;
+
+    if (userRole === "ADMIN") {
+      const adminScope = await getAdminScope(userId);
+      if (!checkAdminElectionScope(adminScope, election)) {
+        return res.status(403).json({
+          success: false,
+          message: UNAUTHORIZED_ELECTION_MESSAGE
+        });
+      }
     }
 
     await deleteElection(id);

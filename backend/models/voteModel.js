@@ -70,7 +70,7 @@ export async function isEligibleVoter(electionId, studentId, connection = pool) 
 // Get election by ID
 export async function getElectionById(electionId, connection = pool) {
   const [rows] = await connection.query(
-    `SELECT id, title, description, status, start_date, end_date, created_by, created_at
+    `SELECT id, title, description, status, start_date, end_date, department_id, year_id, section_id, created_by, created_at
      FROM elections
      WHERE id = ?
      LIMIT 1`,

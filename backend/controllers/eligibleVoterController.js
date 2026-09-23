@@ -18,11 +18,15 @@ import {
 } from "../models/studentModel.js";
 
 import {
-  findAdminByUserId
-} from "../models/adminModel.js";
+  getAdminScope,
+  checkAdminElectionScope,
+  checkAdminStudentScope,
+  checkStudentElectionScope,
+  UNAUTHORIZED_ELECTION_MESSAGE,
+  STUDENT_UNAUTHORIZED_ELECTION_MESSAGE
+} from "../middleware/adminScopeMiddleware.js";
 
 import pool from "../config/db.js";
-
 
 export async function addEligibleVoterController(
   req,
@@ -49,6 +53,17 @@ export async function addEligibleVoterController(
       return res.status(404).json({
         message: "Election not found"
       });
+    }
+
+    // Enforce Admin section scope on election
+    if (req.user?.role === "ADMIN") {
+      const adminScope = await getAdminScope(req.user.userId || req.user.id);
+      if (!checkAdminElectionScope(adminScope, election)) {
+        return res.status(403).json({
+          success: false,
+          message: UNAUTHORIZED_ELECTION_MESSAGE
+        });
+      }
     }
 
     // Don't modify eligibility after election starts
@@ -82,17 +97,13 @@ export async function addEligibleVoterController(
 
     const studentRecord = students[0];
 
-    // Enforce ADMIN department/year/section scope
+    // Enforce ADMIN department/year/section scope on student
     if (req.user?.role === "ADMIN") {
-      const admin = await findAdminByUserId(req.user.userId || req.user.id);
-      if (
-        admin &&
-        (studentRecord.department_id !== admin.department_id ||
-          (admin.year_id && studentRecord.year_id !== admin.year_id) ||
-          (admin.section_id && studentRecord.section_id !== admin.section_id))
-      ) {
+      const adminScope = await getAdminScope(req.user.userId || req.user.id);
+      if (!checkAdminStudentScope(adminScope, studentRecord)) {
         return res.status(403).json({
-          message: "Admins can only add eligible voters from their assigned department"
+          success: false,
+          message: "You cannot add students outside your assigned section as eligible voters."
         });
       }
     }
@@ -136,7 +147,6 @@ export async function addEligibleVoterController(
   }
 }
 
-
 export async function addBulkEligibleVotersController(
   req,
   res
@@ -173,26 +183,31 @@ export async function addBulkEligibleVotersController(
       });
     }
 
-    // Enforce ADMIN scoping
+    // Enforce ADMIN section scoping on election and bulk criteria
     if (req.user?.role === "ADMIN") {
-      const admin = await findAdminByUserId(req.user.userId || req.user.id);
-      if (admin) {
-        departmentId = admin.department_id;
-        if (admin.year_id) yearId = admin.year_id;
-        if (admin.section_id) sectionId = admin.section_id;
+      const adminScope = await getAdminScope(req.user.userId || req.user.id);
+      if (!checkAdminElectionScope(adminScope, election)) {
+        return res.status(403).json({
+          success: false,
+          message: UNAUTHORIZED_ELECTION_MESSAGE
+        });
       }
+
+      departmentId = adminScope.department_id;
+      yearId = adminScope.year_id;
+      sectionId = adminScope.section_id;
     }
 
     let targetStudentIds = [];
 
     // Option A: Explicit array of student IDs / codes
     if (Array.isArray(studentIds) && studentIds.length > 0) {
-      let query = `SELECT id FROM students WHERE (id IN (?) OR student_id IN (?)) AND status = 'ACTIVE'`;
+      let query = `SELECT id, department_id, year_id, section_id FROM students WHERE (id IN (?) OR student_id IN (?)) AND status = 'ACTIVE'`;
       const queryParams = [studentIds, studentIds];
 
-      if (req.user?.role === "ADMIN" && departmentId) {
-        query += ` AND department_id = ?`;
-        queryParams.push(departmentId);
+      if (req.user?.role === "ADMIN") {
+        query += ` AND department_id = ? AND year_id = ? AND section_id = ?`;
+        queryParams.push(departmentId, yearId, sectionId);
       }
 
       const [students] = await pool.query(query, queryParams);
@@ -222,7 +237,7 @@ export async function addBulkEligibleVotersController(
 
     if (targetStudentIds.length === 0) {
       return res.status(404).json({
-        message: "No active students found matching criteria"
+        message: "No active students found matching your assigned section criteria"
       });
     }
 
@@ -241,7 +256,6 @@ export async function addBulkEligibleVotersController(
   }
 }
 
-
 export async function getEligibleVotersController(
   req,
   res
@@ -258,6 +272,17 @@ export async function getEligibleVotersController(
       return res.status(404).json({
         message: "Election not found"
       });
+    }
+
+    // Enforce Admin section scope
+    if (req.user?.role === "ADMIN") {
+      const adminScope = await getAdminScope(req.user.userId || req.user.id);
+      if (!checkAdminElectionScope(adminScope, election)) {
+        return res.status(403).json({
+          success: false,
+          message: UNAUTHORIZED_ELECTION_MESSAGE
+        });
+      }
     }
 
     const voters =
@@ -282,7 +307,6 @@ export async function getEligibleVotersController(
   }
 }
 
-
 export async function getEligibleVoterByIdController(
   req,
   res
@@ -298,6 +322,17 @@ export async function getEligibleVoterByIdController(
       });
     }
 
+    if (req.user?.role === "ADMIN") {
+      const election = await findElectionById(voter.election_id);
+      const adminScope = await getAdminScope(req.user.userId || req.user.id);
+      if (!checkAdminElectionScope(adminScope, election)) {
+        return res.status(403).json({
+          success: false,
+          message: UNAUTHORIZED_ELECTION_MESSAGE
+        });
+      }
+    }
+
     return res.json({
       eligibleVoter: voter
     });
@@ -309,7 +344,6 @@ export async function getEligibleVoterByIdController(
     });
   }
 }
-
 
 export async function checkMyEligibilityController(
   req,
@@ -328,6 +362,20 @@ export async function checkMyEligibilityController(
     if (!student) {
       return res.status(404).json({
         message: "Student record not found"
+      });
+    }
+
+    const election = await findElectionById(electionId);
+    if (!election) {
+      return res.status(404).json({
+        message: "Election not found"
+      });
+    }
+
+    if (!checkStudentElectionScope(student, election)) {
+      return res.status(403).json({
+        success: false,
+        message: STUDENT_UNAUTHORIZED_ELECTION_MESSAGE
       });
     }
 
@@ -351,7 +399,6 @@ export async function checkMyEligibilityController(
   }
 }
 
-
 export async function removeEligibleVoterController(
   req,
   res
@@ -369,24 +416,18 @@ export async function removeEligibleVoterController(
       });
     }
 
-    // Enforce ADMIN department scoping
+    const election = await findElectionById(voter.election_id);
+
+    // Enforce ADMIN section scoping on election
     if (req.user?.role === "ADMIN") {
-      const admin = await findAdminByUserId(req.user.userId || req.user.id);
-      const student = await findStudentById(voter.student_id);
-      if (
-        admin &&
-        student &&
-        (student.department_id !== admin.department_id ||
-          (admin.year_id && student.year_id !== admin.year_id) ||
-          (admin.section_id && student.section_id !== admin.section_id))
-      ) {
+      const adminScope = await getAdminScope(req.user.userId || req.user.id);
+      if (!checkAdminElectionScope(adminScope, election)) {
         return res.status(403).json({
-          message: "You do not have permission to remove eligible voters outside your assigned department"
+          success: false,
+          message: UNAUTHORIZED_ELECTION_MESSAGE
         });
       }
     }
-
-    const election = await findElectionById(voter.election_id);
 
     if (
       election && (
@@ -420,7 +461,6 @@ export async function removeEligibleVoterController(
   }
 }
 
-
 export async function removeAllEligibleVotersController(
   req,
   res
@@ -428,17 +468,24 @@ export async function removeAllEligibleVotersController(
   try {
     const { electionId } = req.params;
 
-    // Only SUPER_ADMIN can clear all voters for an election
-    if (req.user?.role !== "SUPER_ADMIN") {
-      return res.status(403).json({
-        message: "Only Super Admin can clear all eligible voters for an election"
-      });
-    }
-
     const election = await findElectionById(electionId);
     if (!election) {
       return res.status(404).json({
         message: "Election not found"
+      });
+    }
+
+    if (req.user?.role === "ADMIN") {
+      const adminScope = await getAdminScope(req.user.userId || req.user.id);
+      if (!checkAdminElectionScope(adminScope, election)) {
+        return res.status(403).json({
+          success: false,
+          message: UNAUTHORIZED_ELECTION_MESSAGE
+        });
+      }
+    } else if (req.user?.role !== "SUPER_ADMIN") {
+      return res.status(403).json({
+        message: "Unauthorized"
       });
     }
 
@@ -465,4 +512,4 @@ export async function removeAllEligibleVotersController(
       message: "Failed to remove eligible voters"
     });
   }
-}
+}

@@ -1,4 +1,12 @@
+import pool from '../config/db.js'
 import * as voteModel from '../models/voteModel.js'
+import {
+  getAdminScope,
+  checkAdminElectionScope,
+  checkStudentElectionScope,
+  UNAUTHORIZED_ELECTION_MESSAGE,
+  STUDENT_UNAUTHORIZED_ELECTION_MESSAGE
+} from '../middleware/adminScopeMiddleware.js'
 
 // ==========================================
 // GET ELECTION RESULTS
@@ -7,6 +15,7 @@ export async function getElectionResults(req, res) {
   try {
     const { electionId } = req.params
     const userRole = req.user?.role
+    const userId = req.user?.userId || req.user?.id
 
     // ------------------------------------------
     // Validate election ID
@@ -29,12 +38,39 @@ export async function getElectionResults(req, res) {
     }
 
     // ------------------------------------------
-    // Students can only see results if status is RESULT_PUBLISHED
+    // ADMIN section scope validation
     // ------------------------------------------
-    if (userRole === 'STUDENT' && election.status !== 'RESULT_PUBLISHED') {
-      return res.status(403).json({
-        message: 'Results have not been published for this election yet.'
-      })
+    if (userRole === 'ADMIN') {
+      const adminScope = await getAdminScope(userId)
+      if (!checkAdminElectionScope(adminScope, election)) {
+        return res.status(403).json({
+          success: false,
+          message: UNAUTHORIZED_ELECTION_MESSAGE
+        })
+      }
+    }
+
+    // ------------------------------------------
+    // STUDENT section scope validation & status check
+    // ------------------------------------------
+    if (userRole === 'STUDENT') {
+      const [studentRows] = await pool.query(
+        `SELECT id, department_id, year_id, section_id FROM students WHERE user_id = ? LIMIT 1`,
+        [userId]
+      )
+      const student = studentRows[0]
+      if (!student || !checkStudentElectionScope(student, election)) {
+        return res.status(403).json({
+          success: false,
+          message: STUDENT_UNAUTHORIZED_ELECTION_MESSAGE
+        })
+      }
+
+      if (election.status !== 'RESULT_PUBLISHED') {
+        return res.status(403).json({
+          message: 'Results have not been published for this election yet.'
+        })
+      }
     }
 
     const results = await voteModel.getElectionResults(electionId)
@@ -47,7 +83,10 @@ export async function getElectionResults(req, res) {
         description: election.description,
         status: election.status,
         startDate: election.start_date,
-        endDate: election.end_date
+        endDate: election.end_date,
+        departmentId: election.department_id,
+        yearId: election.year_id,
+        sectionId: election.section_id
       },
       stats,
       results
@@ -61,4 +100,4 @@ export async function getElectionResults(req, res) {
       error: error.message
     })
   }
-}
+}

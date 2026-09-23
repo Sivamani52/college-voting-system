@@ -169,6 +169,12 @@ CREATE TABLE elections (
         'RESULT_PUBLISHED'
     ) DEFAULT 'DRAFT',
 
+    department_id INT,
+
+    year_id INT,
+
+    section_id INT,
+
     created_by INT NOT NULL,
 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -178,7 +184,22 @@ CREATE TABLE elections (
 
     CONSTRAINT fk_election_creator
         FOREIGN KEY (created_by)
-        REFERENCES users(id)
+        REFERENCES users(id),
+
+    CONSTRAINT fk_election_department
+        FOREIGN KEY (department_id)
+        REFERENCES departments(id)
+        ON DELETE SET NULL,
+
+    CONSTRAINT fk_election_year
+        FOREIGN KEY (year_id)
+        REFERENCES years(id)
+        ON DELETE SET NULL,
+
+    CONSTRAINT fk_election_section
+        FOREIGN KEY (section_id)
+        REFERENCES sections(id)
+        ON DELETE SET NULL
 );
 
 

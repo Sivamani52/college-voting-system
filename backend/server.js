@@ -32,6 +32,7 @@ app.use("/api/test", testRoutes);
 app.use("/api/admins", adminRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/elections", electionRoutes);
+app.use("/api/admin/elections", electionRoutes);
 app.use("/api/positions",positionRoutes);
 app.use("/api/candidates",candidateRoutes);
 app.use("/api/eligible-voters",eligibleVoterRoutes);

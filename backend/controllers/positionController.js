@@ -10,6 +10,14 @@ import {
   findElectionById
 } from "../models/electionModel.js";
 
+import {
+  getAdminScope,
+  checkAdminElectionScope,
+  checkStudentElectionScope,
+  UNAUTHORIZED_ELECTION_MESSAGE,
+  STUDENT_UNAUTHORIZED_ELECTION_MESSAGE
+} from "../middleware/adminScopeMiddleware.js";
+import { findStudentByUserId } from "../models/studentModel.js";
 
 export async function createPositionController(req, res) {
   try {
@@ -29,6 +37,17 @@ export async function createPositionController(req, res) {
       return res.status(404).json({
         message: "Election not found"
       });
+    }
+
+    // Enforce Admin section scope
+    if (req.user?.role === "ADMIN") {
+      const adminScope = await getAdminScope(req.user.userId || req.user.id);
+      if (!checkAdminElectionScope(adminScope, election)) {
+        return res.status(403).json({
+          success: false,
+          message: UNAUTHORIZED_ELECTION_MESSAGE
+        });
+      }
     }
 
     // Don't allow adding positions after election becomes ACTIVE / CLOSED / RESULT_PUBLISHED
@@ -68,7 +87,6 @@ export async function createPositionController(req, res) {
   }
 }
 
-
 export async function getPositionsByElection(req, res) {
   try {
     const { electionId } = req.params;
@@ -78,6 +96,25 @@ export async function getPositionsByElection(req, res) {
       return res.status(404).json({
         message: "Election not found"
       });
+    }
+
+    // Enforce Admin section scope
+    if (req.user?.role === "ADMIN") {
+      const adminScope = await getAdminScope(req.user.userId || req.user.id);
+      if (!checkAdminElectionScope(adminScope, election)) {
+        return res.status(403).json({
+          success: false,
+          message: UNAUTHORIZED_ELECTION_MESSAGE
+        });
+      }
+    } else if (req.user?.role === "STUDENT") {
+      const student = await findStudentByUserId(req.user.userId || req.user.id);
+      if (!student || !checkStudentElectionScope(student, election)) {
+        return res.status(403).json({
+          success: false,
+          message: STUDENT_UNAUTHORIZED_ELECTION_MESSAGE
+        });
+      }
     }
 
     const positions = await findPositionsByElection(electionId);
@@ -95,7 +132,6 @@ export async function getPositionsByElection(req, res) {
   }
 }
 
-
 export async function getPositionByIdController(req, res) {
   try {
     const { id } = req.params;
@@ -105,6 +141,26 @@ export async function getPositionByIdController(req, res) {
       return res.status(404).json({
         message: "Position not found"
       });
+    }
+
+    if (req.user?.role === "ADMIN") {
+      const election = await findElectionById(position.election_id);
+      const adminScope = await getAdminScope(req.user.userId || req.user.id);
+      if (!checkAdminElectionScope(adminScope, election)) {
+        return res.status(403).json({
+          success: false,
+          message: UNAUTHORIZED_ELECTION_MESSAGE
+        });
+      }
+    } else if (req.user?.role === "STUDENT") {
+      const election = await findElectionById(position.election_id);
+      const student = await findStudentByUserId(req.user.userId || req.user.id);
+      if (!student || !checkStudentElectionScope(student, election)) {
+        return res.status(403).json({
+          success: false,
+          message: STUDENT_UNAUTHORIZED_ELECTION_MESSAGE
+        });
+      }
     }
 
     return res.json({
@@ -120,7 +176,6 @@ export async function getPositionByIdController(req, res) {
   }
 }
 
-
 export async function updatePositionController(req, res) {
   try {
     const { id } = req.params;
@@ -133,6 +188,18 @@ export async function updatePositionController(req, res) {
     }
 
     const election = await findElectionById(position.election_id);
+
+    // Enforce Admin section scope
+    if (req.user?.role === "ADMIN") {
+      const adminScope = await getAdminScope(req.user.userId || req.user.id);
+      if (!checkAdminElectionScope(adminScope, election)) {
+        return res.status(403).json({
+          success: false,
+          message: UNAUTHORIZED_ELECTION_MESSAGE
+        });
+      }
+    }
+
     if (
       election &&
       (election.status === "ACTIVE" ||
@@ -176,7 +243,6 @@ export async function updatePositionController(req, res) {
   }
 }
 
-
 export async function deletePositionController(req, res) {
   try {
     const { id } = req.params;
@@ -189,6 +255,18 @@ export async function deletePositionController(req, res) {
     }
 
     const election = await findElectionById(position.election_id);
+
+    // Enforce Admin section scope
+    if (req.user?.role === "ADMIN") {
+      const adminScope = await getAdminScope(req.user.userId || req.user.id);
+      if (!checkAdminElectionScope(adminScope, election)) {
+        return res.status(403).json({
+          success: false,
+          message: UNAUTHORIZED_ELECTION_MESSAGE
+        });
+      }
+    }
+
     if (
       election &&
       (election.status === "ACTIVE" ||
