@@ -27,6 +27,9 @@ export async function login(req, res) {
     let user = await findUserByEmail(identifier);
     if (!user && !identifier.includes("@")) {
       user = await findUserByEmail(`${identifier}@college.com`);
+      if (!user && identifier.includes("_")) {
+        user = await findUserByEmail(`${identifier.replace(/_/g, "")}@college.com`);
+      }
     }
 
     // 2. If not found by email, try finding by Student ID (in students table)

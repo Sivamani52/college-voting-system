@@ -183,7 +183,9 @@ export default function AdminDashboard() {
                   Dept ID: {adminProfile?.department_id ?? "All"}
                 </span>
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/10 text-slate-200 border border-white/15">
-                  Year: {adminProfile?.year_id ?? 1} • Sec: {adminProfile?.section_id ?? "A"}
+                  {adminProfile?.year_id
+                    ? `${adminProfile?.year_name || `Year ${adminProfile.year_id}`} • Sec: ${adminProfile?.section_name || adminProfile.section_id}`
+                    : "Top Branch Admin • All Years & Sections"}
                 </span>
               </div>
 

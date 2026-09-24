@@ -58,16 +58,18 @@ export async function createElectionController(req, res) {
     // Enforce ADMIN scoping from database - never trust client input
     if (req.user?.role === "ADMIN") {
       const adminScope = await getAdminScope(createdBy);
-      if (!adminScope || !adminScope.department_id || !adminScope.year_id || !adminScope.section_id) {
+      if (!adminScope || !adminScope.department_id) {
         return res.status(403).json({
           success: false,
-          message: "Admin does not have an assigned section. Please contact Super Admin."
+          message: "Admin does not have an assigned department. Please contact Super Admin."
         });
       }
 
       departmentId = adminScope.department_id;
-      yearId = adminScope.year_id;
-      sectionId = adminScope.section_id;
+      // If admin is section-specific, enforce their year & section.
+      // If admin is top branch admin, allow year/section to be specified or null.
+      yearId = adminScope.year_id !== null && adminScope.year_id !== undefined ? adminScope.year_id : (req.body.yearId || req.body.year_id || null);
+      sectionId = adminScope.section_id !== null && adminScope.section_id !== undefined ? adminScope.section_id : (req.body.sectionId || req.body.section_id || null);
     } else if (req.user?.role === "SUPER_ADMIN") {
       // Super Admin can optionally create election for a specific section or leave null
       departmentId = req.body.departmentId || req.body.department_id || null;
@@ -115,11 +117,11 @@ export async function getAllElections(req, res) {
         });
       }
 
-      // Strictly return only elections belonging to Admin's assigned Department + Year + Section
+      // Return elections belonging to Admin's assigned Department (and Year + Section if restricted)
       filterOptions = {
         departmentId: adminScope.department_id,
-        yearId: adminScope.year_id,
-        sectionId: adminScope.section_id
+        yearId: adminScope.year_id !== null && adminScope.year_id !== undefined ? adminScope.year_id : undefined,
+        sectionId: adminScope.section_id !== null && adminScope.section_id !== undefined ? adminScope.section_id : undefined
       };
     } else if (userRole === "STUDENT") {
       const student = await findStudentByUserId(userId);

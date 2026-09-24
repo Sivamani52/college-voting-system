@@ -8,7 +8,20 @@ export async function findStudentByStudentId(studentId) {
     [cleanId]
   );
 
-  return rows[0];
+  if (rows[0]) return rows[0];
+
+  // Try checking with year '1' inserted, e.g. cseA01 -> cse1A01
+  const match = cleanId.match(/^([a-zA-Z]+)([a-zA-Z])(\d+)$/);
+  if (match) {
+    const candidateId = `${match[1]}1${match[2]}${match[3]}`;
+    const [altRows] = await pool.query(
+      "SELECT * FROM students WHERE LOWER(student_id) = LOWER(?) LIMIT 1",
+      [candidateId]
+    );
+    if (altRows[0]) return altRows[0];
+  }
+
+  return null;
 }
 
 export async function findStudentByUserId(userId) {

@@ -16,15 +16,21 @@ const DEPARTMENTS = [
   { code: "EEE", name: "Electrical and Electronics Engineering", adminPass: "eeeadmin" }
 ];
 
-const SECTIONS = ["A", "B", "C", "D", "E"];
+const YEARS = [
+  { key: "1", name: "1st Year", sections: ["A", "B", "C", "D", "E"] },
+  { key: "2", name: "2nd Year", sections: ["A"] },
+  { key: "3", name: "3rd Year", sections: ["A"] },
+  { key: "4", name: "4th Year", sections: ["A"] }
+];
+
 const STUDENT_COUNTS = ["01", "02", "03", "04", "05"];
 
 async function seedData() {
-  console.log("==========================================");
-  console.log(" Starting Dummy Data Seeding");
-  console.log("==========================================");
+  console.log("==================================================");
+  console.log(" Starting Year-Wise & Branch Dummy Data Seeding");
+  console.log("==================================================");
 
-  // 1. Ensure Super Admin exists
+  // 1. Ensure Super Admin
   const superAdminEmail = "superadmin@college.com";
   const superAdminPass = "Admin@123";
   const superAdminHash = await bcrypt.hash(superAdminPass, 10);
@@ -40,21 +46,23 @@ async function seedData() {
        VALUES (?, ?, 'SUPER_ADMIN', 'ACTIVE', 0)`,
       [superAdminEmail, superAdminHash]
     );
-    console.log("✔ Created Super Admin account:", superAdminEmail);
+    console.log("✔ Super Admin created:", superAdminEmail);
   } else {
     await pool.query(
       `UPDATE users SET password_hash = ?, status = 'ACTIVE', must_change_password = 0 WHERE id = ?`,
       [superAdminHash, existingSuperAdmin[0].id]
     );
-    console.log("✔ Updated existing Super Admin credentials");
+    console.log("✔ Super Admin updated:", superAdminEmail);
   }
 
-  // 2. Iterate each department
-  const seededAdmins = [];
+  const seededTopAdmins = [];
+  const seededYearAdmins = [];
   const seededStudents = {};
 
   for (const deptConfig of DEPARTMENTS) {
-    console.log(`\n--- Setting up Department: ${deptConfig.code} (${deptConfig.name}) ---`);
+    console.log(`\n==================================================`);
+    console.log(` DEPARTMENT: ${deptConfig.code} (${deptConfig.name})`);
+    console.log(`==================================================`);
 
     // A. Department record
     let deptId;
@@ -69,181 +77,246 @@ async function seedData() {
         [deptConfig.name, deptConfig.code]
       );
       deptId = insertDept.insertId;
-      console.log(`✔ Created department: ${deptConfig.code} (ID: ${deptId})`);
+      console.log(`✔ Created Department: ${deptConfig.code} (ID: ${deptId})`);
     } else {
       deptId = deptRows[0].id;
       await pool.query(
         "UPDATE departments SET name = ?, status = 'ACTIVE' WHERE id = ?",
         [deptConfig.name, deptId]
       );
-      console.log(`✔ Existing department found: ${deptConfig.code} (ID: ${deptId})`);
+      console.log(`✔ Found Department: ${deptConfig.code} (ID: ${deptId})`);
     }
 
-    // B. Department Admin User & Admin Record
-    const adminEmail = `${deptConfig.code.toLowerCase()}admin@college.com`;
-    const adminPass = deptConfig.adminPass;
-    const adminHash = await bcrypt.hash(adminPass, 10);
+    // B. ONE TOP ADMIN FOR THIS BRANCH (year_id = null, section_id = null)
+    const topAdminEmail = `${deptConfig.code.toLowerCase()}admin@college.com`;
+    const topAdminPass = deptConfig.adminPass;
+    const topAdminHash = await bcrypt.hash(topAdminPass, 10);
+    const topAdminUsername = `${deptConfig.code.toLowerCase()}admin`;
 
-    let adminUserId;
-    const [existingAdminUser] = await pool.query(
+    let topAdminUserId;
+    const [existingTopAdminUser] = await pool.query(
       "SELECT id FROM users WHERE email = ? LIMIT 1",
-      [adminEmail]
+      [topAdminEmail]
     );
 
-    if (existingAdminUser.length === 0) {
+    if (existingTopAdminUser.length === 0) {
       const [resUser] = await pool.query(
         `INSERT INTO users (email, password_hash, role, status, must_change_password)
          VALUES (?, ?, 'ADMIN', 'ACTIVE', 0)`,
-        [adminEmail, adminHash]
+        [topAdminEmail, topAdminHash]
       );
-      adminUserId = resUser.insertId;
+      topAdminUserId = resUser.insertId;
     } else {
-      adminUserId = existingAdminUser[0].id;
+      topAdminUserId = existingTopAdminUser[0].id;
       await pool.query(
         "UPDATE users SET password_hash = ?, status = 'ACTIVE', must_change_password = 0, role = 'ADMIN' WHERE id = ?",
-        [adminHash, adminUserId]
+        [topAdminHash, topAdminUserId]
       );
     }
 
-    // Ensure entry in admins table
-    const [existingAdminRecord] = await pool.query(
+    const topAdminFullName = `${deptConfig.code} Top Branch Admin`;
+    const [existingTopAdminRec] = await pool.query(
       "SELECT id FROM admins WHERE user_id = ? LIMIT 1",
-      [adminUserId]
+      [topAdminUserId]
     );
 
-    const adminFullName = `${deptConfig.code} Department Admin`;
-    if (existingAdminRecord.length === 0) {
+    if (existingTopAdminRec.length === 0) {
       await pool.query(
         `INSERT INTO admins (user_id, full_name, department_id, year_id, section_id)
          VALUES (?, ?, ?, NULL, NULL)`,
-        [adminUserId, adminFullName, deptId]
+        [topAdminUserId, topAdminFullName, deptId]
       );
     } else {
       await pool.query(
         `UPDATE admins SET full_name = ?, department_id = ?, year_id = NULL, section_id = NULL WHERE user_id = ?`,
-        [adminFullName, deptId, adminUserId]
+        [topAdminFullName, deptId, topAdminUserId]
       );
     }
 
-    seededAdmins.push({
+    seededTopAdmins.push({
       department: deptConfig.code,
       departmentName: deptConfig.name,
-      email: adminEmail,
-      usernameOrId: `${deptConfig.code.toLowerCase()}admin`,
-      password: adminPass
+      username: topAdminUsername,
+      email: topAdminEmail,
+      password: topAdminPass,
+      scope: "All Years & All Sections (Branch-Wide Authority)"
     });
-    console.log(`✔ Admin created/updated: ${adminEmail} (Password: ${adminPass})`);
+    console.log(`✔ Top Branch Admin: ${topAdminEmail} | Pass: ${topAdminPass}`);
 
-    // C. Academic Year (1st Year)
-    const yearName = "1st Year";
-    let yearId;
-    const [yearRows] = await pool.query(
-      "SELECT id FROM years WHERE department_id = ? AND name = ? LIMIT 1",
-      [deptId, yearName]
-    );
-
-    if (yearRows.length === 0) {
-      const [insertYear] = await pool.query(
-        "INSERT INTO years (department_id, name) VALUES (?, ?)",
-        [deptId, yearName]
-      );
-      yearId = insertYear.insertId;
-      console.log(`✔ Created Academic Year: ${yearName} (ID: ${yearId})`);
-    } else {
-      yearId = yearRows[0].id;
-      console.log(`✔ Found Academic Year: ${yearName} (ID: ${yearId})`);
-    }
-
-    // D. 5 Sections (A, B, C, D, E) & 5 Students each
+    // C. 4 Academic Years & Year-Wise Admins (For Section A only)
     seededStudents[deptConfig.code] = [];
 
-    for (const secName of SECTIONS) {
-      let secId;
-      const [secRows] = await pool.query(
-        "SELECT id FROM sections WHERE year_id = ? AND name = ? LIMIT 1",
-        [yearId, secName]
+    for (const yr of YEARS) {
+      let yearId;
+      const [yearRows] = await pool.query(
+        "SELECT id FROM years WHERE department_id = ? AND name = ? LIMIT 1",
+        [deptId, yr.name]
       );
 
-      if (secRows.length === 0) {
-        const [insertSec] = await pool.query(
-          "INSERT INTO sections (year_id, name) VALUES (?, ?)",
+      if (yearRows.length === 0) {
+        const [insertYear] = await pool.query(
+          "INSERT INTO years (department_id, name) VALUES (?, ?)",
+          [deptId, yr.name]
+        );
+        yearId = insertYear.insertId;
+        console.log(`  ✔ Created Academic Year: ${yr.name} (ID: ${yearId})`);
+      } else {
+        yearId = yearRows[0].id;
+        console.log(`  ✔ Found Academic Year: ${yr.name} (ID: ${yearId})`);
+      }
+
+      // Create Sections for this Year
+      const sectionMap = {};
+      for (const secName of yr.sections) {
+        let secId;
+        const [secRows] = await pool.query(
+          "SELECT id FROM sections WHERE year_id = ? AND name = ? LIMIT 1",
           [yearId, secName]
         );
-        secId = insertSec.insertId;
-        console.log(`  ✔ Created Section: ${secName} (ID: ${secId})`);
+
+        if (secRows.length === 0) {
+          const [insertSec] = await pool.query(
+            "INSERT INTO sections (year_id, name) VALUES (?, ?)",
+            [yearId, secName]
+          );
+          secId = insertSec.insertId;
+        } else {
+          secId = secRows[0].id;
+        }
+        sectionMap[secName] = secId;
+      }
+
+      // D. YEAR-WISE ADMIN FOR ONE SECTION ONLY (Section A)
+      const secAId = sectionMap["A"];
+      const yrAdminUsername = `${deptConfig.code.toLowerCase()}y${yr.key}admin`;
+      const yrAdminEmail = `${yrAdminUsername}@college.com`;
+      const yrAdminPass = yrAdminUsername;
+      const yrAdminHash = await bcrypt.hash(yrAdminPass, 10);
+      const yrAdminFullName = `${deptConfig.code} Year ${yr.key} Sec A Admin`;
+
+      let yrAdminUserId;
+      const [existingYrUser] = await pool.query(
+        "SELECT id FROM users WHERE email = ? LIMIT 1",
+        [yrAdminEmail]
+      );
+
+      if (existingYrUser.length === 0) {
+        const [insUser] = await pool.query(
+          `INSERT INTO users (email, password_hash, role, status, must_change_password)
+           VALUES (?, ?, 'ADMIN', 'ACTIVE', 0)`,
+          [yrAdminEmail, yrAdminHash]
+        );
+        yrAdminUserId = insUser.insertId;
       } else {
-        secId = secRows[0].id;
+        yrAdminUserId = existingYrUser[0].id;
+        await pool.query(
+          "UPDATE users SET password_hash = ?, status = 'ACTIVE', must_change_password = 0, role = 'ADMIN' WHERE id = ?",
+          [yrAdminHash, yrAdminUserId]
+        );
       }
 
-      // 5 Students in this Section
-      for (const num of STUDENT_COUNTS) {
-        const studentId = `${deptConfig.code.toLowerCase()}${secName}${num}`;
-        const studentEmail = `${studentId.toLowerCase()}@college.com`;
-        const studentPassword = `pass-${studentId}-123`;
-        const studentFullName = `${deptConfig.code} Student ${secName}${num}`;
-        const studentPhone = `98765${num}${deptId % 10}${secName.charCodeAt(0) % 10}`;
+      const [existingYrAdminRec] = await pool.query(
+        "SELECT id FROM admins WHERE user_id = ? LIMIT 1",
+        [yrAdminUserId]
+      );
 
-        const studentHash = await bcrypt.hash(studentPassword, 10);
-
-        // User record
-        let sUserId;
-        const [existingUser] = await pool.query(
-          "SELECT id FROM users WHERE email = ? LIMIT 1",
-          [studentEmail]
+      if (existingYrAdminRec.length === 0) {
+        await pool.query(
+          `INSERT INTO admins (user_id, full_name, department_id, year_id, section_id)
+           VALUES (?, ?, ?, ?, ?)`,
+          [yrAdminUserId, yrAdminFullName, deptId, yearId, secAId]
         );
-
-        if (existingUser.length === 0) {
-          const [insUser] = await pool.query(
-            `INSERT INTO users (email, password_hash, role, status, must_change_password)
-             VALUES (?, ?, 'STUDENT', 'ACTIVE', 0)`,
-            [studentEmail, studentHash]
-          );
-          sUserId = insUser.insertId;
-        } else {
-          sUserId = existingUser[0].id;
-          await pool.query(
-            `UPDATE users SET password_hash = ?, status = 'ACTIVE', must_change_password = 0, role = 'STUDENT' WHERE id = ?`,
-            [studentHash, sUserId]
-          );
-        }
-
-        // Student record
-        const [existingStudent] = await pool.query(
-          "SELECT id FROM students WHERE student_id = ? OR user_id = ? LIMIT 1",
-          [studentId, sUserId]
+      } else {
+        await pool.query(
+          `UPDATE admins SET full_name = ?, department_id = ?, year_id = ?, section_id = ? WHERE user_id = ?`,
+          [yrAdminFullName, deptId, yearId, secAId, yrAdminUserId]
         );
-
-        if (existingStudent.length === 0) {
-          await pool.query(
-            `INSERT INTO students (user_id, student_id, full_name, department_id, year_id, section_id, phone, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 'ACTIVE')`,
-            [sUserId, studentId, studentFullName, deptId, yearId, secId, studentPhone]
-          );
-        } else {
-          await pool.query(
-            `UPDATE students SET student_id = ?, full_name = ?, department_id = ?, year_id = ?, section_id = ?, phone = ?, status = 'ACTIVE'
-             WHERE id = ?`,
-            [studentId, studentFullName, deptId, yearId, secId, studentPhone, existingStudent[0].id]
-          );
-        }
-
-        seededStudents[deptConfig.code].push({
-          section: secName,
-          studentId: studentId,
-          email: studentEmail,
-          password: studentPassword,
-          fullName: studentFullName
-        });
       }
-      console.log(`  ✔ Seeded 5 students for Section ${secName}`);
+
+      seededYearAdmins.push({
+        department: deptConfig.code,
+        year: yr.name,
+        section: "A",
+        username: yrAdminUsername,
+        email: yrAdminEmail,
+        password: yrAdminPass,
+        scope: `${deptConfig.code} • ${yr.name} • Section A Only`
+      });
+      console.log(`  ✔ Year Admin (Sec A only): ${yrAdminEmail} | Pass: ${yrAdminPass}`);
+
+      // E. SEED 5 STUDENTS FOR EACH SECTION IN THIS YEAR
+      for (const secName of yr.sections) {
+        const secId = sectionMap[secName];
+        for (const num of STUDENT_COUNTS) {
+          // studentId e.g. cse1A01, cse2A01, cse1B01
+          const studentId = `${deptConfig.code.toLowerCase()}${yr.key}${secName}${num}`;
+          const studentEmail = `${studentId.toLowerCase()}@college.com`;
+          const studentPassword = `pass-${studentId}-123`;
+          const studentFullName = `${deptConfig.code} Y${yr.key} Student ${secName}${num}`;
+          const studentPhone = `987${yr.key}${num}${deptId % 10}${secName.charCodeAt(0) % 10}`;
+
+          const studentHash = await bcrypt.hash(studentPassword, 10);
+
+          let sUserId;
+          const [existingUser] = await pool.query(
+            "SELECT id FROM users WHERE email = ? LIMIT 1",
+            [studentEmail]
+          );
+
+          if (existingUser.length === 0) {
+            const [insUser] = await pool.query(
+              `INSERT INTO users (email, password_hash, role, status, must_change_password)
+               VALUES (?, ?, 'STUDENT', 'ACTIVE', 0)`,
+              [studentEmail, studentHash]
+            );
+            sUserId = insUser.insertId;
+          } else {
+            sUserId = existingUser[0].id;
+            await pool.query(
+              `UPDATE users SET password_hash = ?, status = 'ACTIVE', must_change_password = 0, role = 'STUDENT' WHERE id = ?`,
+              [studentHash, sUserId]
+            );
+          }
+
+          const [existingStudent] = await pool.query(
+            "SELECT id FROM students WHERE student_id = ? OR user_id = ? LIMIT 1",
+            [studentId, sUserId]
+          );
+
+          if (existingStudent.length === 0) {
+            await pool.query(
+              `INSERT INTO students (user_id, student_id, full_name, department_id, year_id, section_id, phone, status)
+               VALUES (?, ?, ?, ?, ?, ?, ?, 'ACTIVE')`,
+              [sUserId, studentId, studentFullName, deptId, yearId, secId, studentPhone]
+            );
+          } else {
+            await pool.query(
+              `UPDATE students SET student_id = ?, full_name = ?, department_id = ?, year_id = ?, section_id = ?, phone = ?, status = 'ACTIVE'
+               WHERE id = ?`,
+              [studentId, studentFullName, deptId, yearId, secId, studentPhone, existingStudent[0].id]
+            );
+          }
+
+          seededStudents[deptConfig.code].push({
+            year: yr.name,
+            yearKey: yr.key,
+            section: secName,
+            studentId,
+            email: studentEmail,
+            password: studentPassword,
+            fullName: studentFullName
+          });
+        }
+      }
+      console.log(`  ✔ Seeded students for ${yr.name} (${yr.sections.length} section(s) x 5 students)`);
     }
   }
 
-  // 3. Write clean, complete credentials.txt
-  console.log("\n--- Writing Clean credentials.txt ---");
+  // 3. Write Clean, Organized credentials.txt
+  console.log("\n--- Updating credentials.txt ---");
   let fileContent = `# ====================================================================
 #             COLLEGE VOTING SYSTEM - USER CREDENTIALS
-#                      (Clean & Verified)
+#                 (Branch Top Admins, Year Admins & Students)
 # ====================================================================
 
 # --------------------------------------------------------------------
@@ -253,53 +326,78 @@ Role      : SUPER_ADMIN
 Name      : Super Admin
 Email     : ${superAdminEmail}
 Password  : ${superAdminPass}
-Notes     : Full system control across all departments and elections
+Scope     : Full Institution-Wide Super Authority
+
 
 # --------------------------------------------------------------------
-# 2. DEPARTMENT ADMINS CREDENTIALS (5 Branches)
-# (Can log in with either Email or Username e.g. "cseadmin")
+# 2. TOP BRANCH ADMINS (1 Top Admin per Particular Branch)
+# Scope: Full department oversight (All Years & All Sections)
+# (Can log in with Username e.g. "cseadmin" or Email e.g. "cseadmin@college.com")
 # --------------------------------------------------------------------
 `;
 
-  for (const admin of seededAdmins) {
-    fileContent += `Role        : ADMIN (${admin.department})
+  for (const admin of seededTopAdmins) {
+    fileContent += `Role        : TOP_BRANCH_ADMIN (${admin.department})
 Department  : ${admin.departmentName}
-Username/ID : ${admin.usernameOrId}
+Username/ID : ${admin.username}
 Email       : ${admin.email}
 Password    : ${admin.password}
+Authority   : ${admin.scope}
 --------------------------------------------------------------------
 `;
   }
 
   fileContent += `\n# --------------------------------------------------------------------
-# 3. STUDENT CREDENTIALS (5 Branches x 5 Sections x 5 Students = 125 Students)
-# (Students can log in with Student ID e.g. "cseA01" or Email e.g. "csea01@college.com")
-# (Password accepted as both "pass-cseA01-123" and "cseA01-123")
+# 3. YEAR-WISE ADMINS (Assigned to One Section Only - Section A)
+# Scope: Restricted strictly to their assigned Year and Section A
+# (Can log in with Username e.g. "csey1admin" or Email "csey1admin@college.com")
+# --------------------------------------------------------------------
+`;
+
+  for (const ya of seededYearAdmins) {
+    fileContent += `Role        : YEAR_ADMIN (${ya.department} - ${ya.year} - Sec ${ya.section})
+Department  : ${ya.department}
+Assigned    : ${ya.year}, Section ${ya.section}
+Username/ID : ${ya.username}
+Email       : ${ya.email}
+Password    : ${ya.password}
+Scope       : ${ya.scope}
+--------------------------------------------------------------------
+`;
+  }
+
+  fileContent += `\n# --------------------------------------------------------------------
+# 4. YEAR-WISE STUDENT CREDENTIALS
+# (Students can log in with Student ID e.g. "cse1A01" or Email e.g. "cse1a01@college.com")
+# (Password accepted as both "pass-cse1A01-123" and "cse1A01-123")
 # --------------------------------------------------------------------
 `;
 
   for (const deptCode of Object.keys(seededStudents)) {
     fileContent += `\n====================================================================
-DEPARTMENT: ${deptCode} (Total: 25 Students across Sections A, B, C, D, E)
+DEPARTMENT: ${deptCode} (Year-Wise Student Roster)
 ====================================================================\n`;
 
     const students = seededStudents[deptCode];
-    for (const sec of SECTIONS) {
-      fileContent += `--- SECTION ${sec} ---\n`;
-      const secStudents = students.filter(s => s.section === sec);
-      for (const st of secStudents) {
-        fileContent += `Student ID: ${st.studentId.padEnd(8)} | Email: ${st.email.padEnd(24)} | Password: ${st.password.padEnd(18)} | Alternate: ${st.studentId}-123\n`;
+    for (const yr of YEARS) {
+      fileContent += `\n>>> ${yr.name.toUpperCase()} <<<\n`;
+      for (const sec of yr.sections) {
+        fileContent += `[ Section ${sec} ]\n`;
+        const list = students.filter(s => s.yearKey === yr.key && s.section === sec);
+        for (const st of list) {
+          fileContent += `Student ID: ${st.studentId.padEnd(9)} | Email: ${st.email.padEnd(25)} | Password: ${st.password.padEnd(19)} | Alternate: ${st.studentId}-123\n`;
+        }
+        fileContent += `\n`;
       }
-      fileContent += `\n`;
     }
   }
 
   await fs.promises.writeFile(CREDENTIALS_FILE_PATH, fileContent, "utf8");
   console.log(`✔ Successfully generated clean credentials file at: ${CREDENTIALS_FILE_PATH}`);
 
-  console.log("\n==========================================");
-  console.log(" Dummy Data Seeding Finished Successfully!");
-  console.log("==========================================");
+  console.log("\n==================================================");
+  console.log(" Dummy Data Seeding Complete!");
+  console.log("==================================================");
   process.exit(0);
 }
 

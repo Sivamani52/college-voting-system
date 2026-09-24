@@ -32,29 +32,57 @@ export const STUDENT_UNAUTHORIZED_ELECTION_MESSAGE =
 
 /**
  * Validates whether an election belongs to an admin's assigned Department + Year + Section.
- * SUPER_ADMIN is exempt (returns true).
+ * If admin has no year/section assignment, they are a Top Branch Admin and can manage all years/sections in their department.
+ * SUPER_ADMIN is exempt (handled at route level).
  */
 export function checkAdminElectionScope(adminScope, election) {
   if (!adminScope || !election) return false;
 
   const deptMatch = Number(adminScope.department_id) === Number(election.department_id);
-  const yearMatch = Number(adminScope.year_id) === Number(election.year_id);
-  const secMatch = Number(adminScope.section_id) === Number(election.section_id);
+  if (!deptMatch) return false;
 
-  return deptMatch && yearMatch && secMatch;
+  // If admin is assigned to a specific year, enforce year match
+  if (adminScope.year_id !== null && adminScope.year_id !== undefined) {
+    if (Number(adminScope.year_id) !== Number(election.year_id)) {
+      return false;
+    }
+  }
+
+  // If admin is assigned to a specific section, enforce section match
+  if (adminScope.section_id !== null && adminScope.section_id !== undefined) {
+    if (Number(adminScope.section_id) !== Number(election.section_id)) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 /**
  * Validates whether a student belongs to an admin's assigned Department + Year + Section.
+ * If admin has no year/section assignment, they are a Top Branch Admin and can manage all students in their department.
  */
 export function checkAdminStudentScope(adminScope, student) {
   if (!adminScope || !student) return false;
 
   const deptMatch = Number(adminScope.department_id) === Number(student.department_id);
-  const yearMatch = Number(adminScope.year_id) === Number(student.year_id);
-  const secMatch = Number(adminScope.section_id) === Number(student.section_id);
+  if (!deptMatch) return false;
 
-  return deptMatch && yearMatch && secMatch;
+  // If admin is assigned to a specific year, enforce year match
+  if (adminScope.year_id !== null && adminScope.year_id !== undefined) {
+    if (Number(adminScope.year_id) !== Number(student.year_id)) {
+      return false;
+    }
+  }
+
+  // If admin is assigned to a specific section, enforce section match
+  if (adminScope.section_id !== null && adminScope.section_id !== undefined) {
+    if (Number(adminScope.section_id) !== Number(student.section_id)) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 /**

@@ -58,15 +58,22 @@ export async function createStudent(req, res) {
     // -------------------------
     if (req.user?.role === "ADMIN") {
       const adminScope = await getAdminScope(req.user.userId || req.user.id);
-      if (!adminScope || !adminScope.department_id || !adminScope.year_id || !adminScope.section_id) {
+      if (!adminScope || !adminScope.department_id) {
         return res.status(403).json({
-          message: "Admin does not have an assigned section. Please contact Super Admin."
+          message: "Admin does not have an assigned department. Please contact Super Admin."
         });
       }
 
       departmentId = adminScope.department_id;
-      yearId = adminScope.year_id;
-      sectionId = adminScope.section_id;
+      // If admin has a specific year/section, enforce them. If top admin, use provided yearId/sectionId.
+      yearId = adminScope.year_id !== null && adminScope.year_id !== undefined ? adminScope.year_id : yearId;
+      sectionId = adminScope.section_id !== null && adminScope.section_id !== undefined ? adminScope.section_id : sectionId;
+
+      if (!yearId || !sectionId) {
+        return res.status(400).json({
+          message: "Department, Year, and Section are required"
+        });
+      }
     } else {
       // Super Admin must specify departmentId, yearId, sectionId
       if (!departmentId || !yearId || !sectionId) {
@@ -193,8 +200,8 @@ export async function getAllStudentsController(req, res) {
       }
 
       departmentId = adminScope.department_id;
-      yearId = adminScope.year_id;
-      sectionId = adminScope.section_id;
+      yearId = adminScope.year_id !== null && adminScope.year_id !== undefined ? adminScope.year_id : yearId;
+      sectionId = adminScope.section_id !== null && adminScope.section_id !== undefined ? adminScope.section_id : sectionId;
     }
 
     const students = await findAllStudents({
