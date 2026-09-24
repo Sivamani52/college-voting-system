@@ -851,15 +851,15 @@ export default function StudentManagement() {
               <div className="grid grid-cols-3 gap-2 py-1 text-center font-semibold text-xs bg-white/70 rounded-xl p-2.5 border border-blue-100">
                 <div>
                   <span className="text-[10px] uppercase tracking-wider text-gray-500 block">Department</span>
-                  <span className="font-bold text-gray-900">{adminProfile?.department_code || adminProfile?.department_name || "CSE"}</span>
+                  <span className="font-bold text-gray-900">{adminProfile?.department_code || adminProfile?.department_name || "Department"}</span>
                 </div>
                 <div>
                   <span className="text-[10px] uppercase tracking-wider text-gray-500 block">Year</span>
-                  <span className="font-bold text-gray-900">{adminProfile?.year_name || "1st Year"}</span>
+                  <span className="font-bold text-gray-900">{adminProfile?.year_name || (adminProfile?.year_id ? `Year ${adminProfile.year_id}` : "All Years")}</span>
                 </div>
                 <div>
                   <span className="text-[10px] uppercase tracking-wider text-gray-500 block">Section</span>
-                  <span className="font-bold text-gray-900">{adminProfile?.section_name ? `Section ${adminProfile.section_name}` : "Section 1"}</span>
+                  <span className="font-bold text-gray-900">{adminProfile?.section_name ? `Section ${adminProfile.section_name}` : (adminProfile?.section_id ? `Sec ${adminProfile.section_id}` : "All Sections")}</span>
                 </div>
               </div>
               <p className="text-[11px] text-blue-700 font-medium">

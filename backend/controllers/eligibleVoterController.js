@@ -103,9 +103,26 @@ export async function addEligibleVoterController(
       if (!checkAdminStudentScope(adminScope, studentRecord)) {
         return res.status(403).json({
           success: false,
-          message: "You cannot add students outside your assigned section as eligible voters."
+          message: "You cannot add students outside your assigned section or department as eligible voters."
         });
       }
+    }
+
+    // Ensure student strictly matches election scope
+    if (election.department_id && Number(studentRecord.department_id) !== Number(election.department_id)) {
+      return res.status(400).json({
+        message: "Student does not belong to the department of this election"
+      });
+    }
+    if (election.year_id && Number(studentRecord.year_id) !== Number(election.year_id)) {
+      return res.status(400).json({
+        message: "Student does not belong to the academic year of this election"
+      });
+    }
+    if (election.section_id && Number(studentRecord.section_id) !== Number(election.section_id)) {
+      return res.status(400).json({
+        message: "Student does not belong to the section of this election"
+      });
     }
 
     // Check duplicate

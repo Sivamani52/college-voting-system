@@ -49,6 +49,7 @@ import {
   getElectionResults,
 } from "../../services/electionService";
 import { getMyAdminProfile, getAllStudents } from "../../services/studentService";
+import { getYears, getSections } from "../../services/departmentService";
 
 // Standard Department Position Presets
 const STANDARD_POSITIONS = [
@@ -77,6 +78,12 @@ export default function ElectionManagement() {
   // Create Election Modal State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [createLoading, setCreateLoading] = useState(false);
+  const [scopeMode, setScopeMode] = useState("ALL"); // "ALL" or "CUSTOM"
+  const [availableYears, setAvailableYears] = useState([]);
+  const [availableSections, setAvailableSections] = useState([]);
+  const [selectedYearId, setSelectedYearId] = useState("");
+  const [selectedSectionId, setSelectedSectionId] = useState("");
+  const [loadingStructure, setLoadingStructure] = useState(false);
   const [electionForm, setElectionForm] = useState({
     title: "",
     description: "",
@@ -136,6 +143,23 @@ export default function ElectionManagement() {
   const [eligibleVoters, setEligibleVoters] = useState([]);
   const [turnoutStats, setTurnoutStats] = useState(null);
   const [resultsData, setResultsData] = useState(null);
+
+  // Filter students eligible specifically for the selected election scope
+  const eligibleElectionStudents = useMemo(() => {
+    if (!selectedElection) return departmentStudents;
+    return departmentStudents.filter((st) => {
+      const deptMatch =
+        !selectedElection.department_id ||
+        Number(st.department_id) === Number(selectedElection.department_id);
+      const yearMatch =
+        !selectedElection.year_id ||
+        Number(st.year_id) === Number(selectedElection.year_id);
+      const secMatch =
+        !selectedElection.section_id ||
+        Number(st.section_id) === Number(selectedElection.section_id);
+      return deptMatch && yearMatch && secMatch;
+    });
+  }, [departmentStudents, selectedElection]);
 
   // Helper for formatting API errors
   const extractErrorMessage = (err, defaultMsg = "An unexpected error occurred.") => {
@@ -296,7 +320,7 @@ export default function ElectionManagement() {
   };
 
   // Open Create Election Modal
-  const handleOpenCreateModal = () => {
+  const handleOpenCreateModal = async () => {
     const now = new Date();
     const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
     const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -319,7 +343,39 @@ export default function ElectionManagement() {
     ]);
     setNewPositionName("");
     setNewPositionDesc("");
+    setScopeMode("ALL");
+    setSelectedYearId("");
+    setSelectedSectionId("");
     setIsCreateModalOpen(true);
+
+    // If top branch admin, fetch academic years for their department
+    if (!adminProfile?.year_id && adminProfile?.department_id) {
+      try {
+        setLoadingStructure(true);
+        const yRes = await getYears(adminProfile.department_id);
+        const yList = Array.isArray(yRes?.years) ? yRes.years : yRes || [];
+        setAvailableYears(yList);
+      } catch (err) {
+        console.warn("Could not fetch academic years:", err);
+      } finally {
+        setLoadingStructure(false);
+      }
+    }
+  };
+
+  // Handle Academic Year selection for Top Branch Admin
+  const handleYearChange = async (yearId) => {
+    setSelectedYearId(yearId);
+    setSelectedSectionId("");
+    setAvailableSections([]);
+    if (!yearId) return;
+    try {
+      const sRes = await getSections(yearId, adminProfile?.department_id);
+      const sList = Array.isArray(sRes?.sections) ? sRes.sections : sRes || [];
+      setAvailableSections(sList);
+    } catch (err) {
+      console.warn("Could not fetch sections:", err);
+    }
   };
 
   // Add Position Preset in Create Modal
@@ -376,17 +432,31 @@ export default function ElectionManagement() {
       return;
     }
 
+    const isYearAdmin = Boolean(adminProfile?.year_id);
+    if (!isYearAdmin && scopeMode === "CUSTOM" && !selectedYearId) {
+      toast.error("Please select an academic year or choose 'All Department Students'.");
+      return;
+    }
+
+    const targetDepartmentId = adminProfile?.department_id;
+    const targetYearId = isYearAdmin
+      ? adminProfile.year_id
+      : (scopeMode === "CUSTOM" && selectedYearId ? Number(selectedYearId) : null);
+    const targetSectionId = isYearAdmin
+      ? adminProfile.section_id
+      : (scopeMode === "CUSTOM" && selectedSectionId ? Number(selectedSectionId) : null);
+
     setCreateLoading(true);
     try {
-      // 1. Create Election Record
+      // 1. Create Election Record (backend automatically auto-enrolls strictly matching active students)
       const createRes = await createElection({
         title: electionForm.title.trim(),
         description: electionForm.description.trim() || undefined,
         startDate: electionForm.startDate,
         endDate: electionForm.endDate,
-        departmentId: adminProfile?.department_id,
-        yearId: adminProfile?.year_id,
-        sectionId: adminProfile?.section_id,
+        departmentId: targetDepartmentId,
+        yearId: targetYearId,
+        sectionId: targetSectionId,
       });
 
       const electionId = createRes?.electionId || createRes?.id || createRes?.election?.id;
@@ -406,21 +476,12 @@ export default function ElectionManagement() {
         }
       }
 
-      // 3. Auto-Enroll Department Students as Eligible Voters
-      if (electionId && electionForm.autoEnrollDepartment) {
-        try {
-          await addBulkEligibleVoters({
-            electionId,
-            departmentId: adminProfile?.department_id,
-            yearId: adminProfile?.year_id,
-            sectionId: adminProfile?.section_id,
-          });
-        } catch (voterErr) {
-          console.warn("Could not auto-enroll department voters:", voterErr);
-        }
-      }
-
-      toast.success("Department election created successfully!");
+      const enrolledCount = createRes?.autoEnrolledCount;
+      toast.success(
+        enrolledCount !== undefined
+          ? `Election created! Auto-enrolled ${enrolledCount} eligible student voter${enrolledCount === 1 ? '' : 's'}.`
+          : "Election created successfully!"
+      );
       setIsCreateModalOpen(false);
       await loadData(false);
     } catch (err) {
@@ -654,18 +715,18 @@ export default function ElectionManagement() {
     }
   };
 
-  // Handle Bulk Enroll All Department Students
+  // Handle Bulk Enroll All Department Students for selected election
   const handleBulkEnrollVoters = async () => {
     setBulkVoterLoading(true);
     try {
       const res = await addBulkEligibleVoters({
         electionId: selectedElection.id,
-        departmentId: adminProfile?.department_id,
-        yearId: adminProfile?.year_id,
-        sectionId: adminProfile?.section_id,
+        departmentId: selectedElection?.department_id || adminProfile?.department_id,
+        yearId: selectedElection?.year_id || adminProfile?.year_id,
+        sectionId: selectedElection?.section_id || adminProfile?.section_id,
       });
 
-      toast.success(res?.message || "Department students enrolled successfully!");
+      toast.success(res?.message || "Eligible students enrolled successfully!");
 
       // Refresh voter list
       const votersRes = await getEligibleVotersByElection(selectedElection.id);
@@ -740,28 +801,36 @@ export default function ElectionManagement() {
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-100 uppercase tracking-wider">
-                <Vote size={12} /> Section-Scoped Elections
+                <Vote size={12} /> {adminProfile?.year_id ? "Section-Scoped Elections" : "Department-Wide Elections"}
               </span>
             </div>
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-gray-900 tracking-tight">
               Election Management
             </h1>
             <p className="text-xs sm:text-sm text-gray-500">
-              Create and manage elections, positions, candidates, and voter rolls for your assigned section.
+              {adminProfile?.year_id
+                ? "Create and manage elections, positions, candidates, and voter rolls for your assigned section."
+                : "Create and manage elections, positions, candidates, and voter rolls for your department."}
             </p>
 
-            {/* Assigned Section Badge/Card */}
+            {/* Scope Badge/Card */}
             <div className="inline-flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 bg-gradient-to-r from-slate-50 to-blue-50/50 border border-blue-100/80 rounded-xl px-3.5 py-2 mt-1">
               <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-500">
                 <ShieldCheck size={15} className="text-blue-600" />
-                <span>Your Assigned Section:</span>
+                <span>{adminProfile?.year_id ? "Your Assigned Section:" : "Your Administrative Scope:"}</span>
               </div>
               <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-blue-900">
-                <span>{adminProfile?.department_code || adminProfile?.department_name || "CSE"}</span>
+                <span>{adminProfile?.department_code || adminProfile?.department_name || "Department"}</span>
                 <span className="text-blue-300">•</span>
-                <span>{adminProfile?.year_name || "1st Year"}</span>
-                <span className="text-blue-300">•</span>
-                <span>{adminProfile?.section_name ? `Section ${adminProfile.section_name}` : "Section 1"}</span>
+                {adminProfile?.year_id ? (
+                  <>
+                    <span>{adminProfile?.year_name || `Year ${adminProfile.year_id}`}</span>
+                    <span className="text-blue-300">•</span>
+                    <span>Section {adminProfile?.section_name || adminProfile.section_id}</span>
+                  </>
+                ) : (
+                  <span>All Years & Sections (Branch-Wide Authority)</span>
+                )}
               </div>
             </div>
           </div>
@@ -1038,8 +1107,12 @@ export default function ElectionManagement() {
           onClose={() => {
             if (!createLoading) setIsCreateModalOpen(false);
           }}
-          title="Create Section Election"
-          subtitle="Set up title, schedule dates, and positions for your section"
+          title={adminProfile?.year_id ? "Create Section Election" : "Create Department Election"}
+          subtitle={
+            adminProfile?.year_id
+              ? "Set up title, schedule dates, and positions for your section"
+              : "Set up title, schedule dates, positions, and student voter scope for your department"
+          }
           icon={<Vote size={24} className="text-blue-600" />}
           confirmText={createLoading ? "Creating..." : "Create Election"}
           cancelText="Cancel"
@@ -1047,35 +1120,115 @@ export default function ElectionManagement() {
           confirmDisabled={createLoading}
         >
           <form onSubmit={handleCreateElectionSubmit} className="space-y-4 text-left">
-            {/* Read-Only Election Scope Banner */}
-            <div className="bg-gradient-to-r from-blue-50/80 to-indigo-50/80 border border-blue-200/80 rounded-2xl p-4 text-xs text-blue-950 space-y-2 shadow-2xs">
+            {/* Election Scope Banner & Controls */}
+            <div className="bg-gradient-to-r from-blue-50/80 to-indigo-50/80 border border-blue-200/80 rounded-2xl p-4 text-xs text-blue-950 space-y-3 shadow-2xs">
               <div className="flex items-center justify-between">
                 <span className="font-extrabold uppercase tracking-wider text-[11px] text-blue-900 flex items-center gap-1.5">
                   <ShieldCheck size={15} className="text-blue-700" />
-                  Election Scope
+                  Target Student Scope
                 </span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
-                  Assigned Section
+                  {adminProfile?.year_id ? "Assigned Section Only" : "Branch Authority"}
                 </span>
               </div>
-              <div className="grid grid-cols-3 gap-2 py-1 text-center font-semibold text-xs bg-white/70 rounded-xl p-2.5 border border-blue-100">
-                <div>
-                  <span className="text-[10px] uppercase tracking-wider text-gray-500 block">Department</span>
-                  <span className="font-bold text-gray-900">{adminProfile?.department_code || adminProfile?.department_name || "Department"}</span>
+
+              {/* If Admin has fixed year & section */}
+              {adminProfile?.year_id ? (
+                <div className="grid grid-cols-3 gap-2 py-1 text-center font-semibold text-xs bg-white/70 rounded-xl p-2.5 border border-blue-100">
+                  <div>
+                    <span className="text-[10px] uppercase tracking-wider text-gray-500 block">Department</span>
+                    <span className="font-bold text-gray-900">{adminProfile?.department_code || adminProfile?.department_name || "Department"}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase tracking-wider text-gray-500 block">Year</span>
+                    <span className="font-bold text-gray-900">{adminProfile?.year_name || `Year ${adminProfile.year_id}`}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase tracking-wider text-gray-500 block">Section</span>
+                    <span className="font-bold text-gray-900">{adminProfile?.section_name ? `Section ${adminProfile.section_name}` : `Sec ${adminProfile.section_id}`}</span>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-[10px] uppercase tracking-wider text-gray-500 block">Year</span>
-                  <span className="font-bold text-gray-900">{adminProfile?.year_name || (adminProfile?.year_id ? `Year ${adminProfile.year_id}` : "All Years")}</span>
+              ) : (
+                /* Top Branch Admin: can choose between entire department or specific year/section */
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setScopeMode("ALL");
+                        setSelectedYearId("");
+                        setSelectedSectionId("");
+                      }}
+                      className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold border transition ${
+                        scopeMode === "ALL"
+                          ? "bg-blue-600 text-white border-blue-600 shadow-2xs"
+                          : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+                      }`}
+                    >
+                      Entire Department (All Years & Sections)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setScopeMode("CUSTOM")}
+                      className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold border transition ${
+                        scopeMode === "CUSTOM"
+                          ? "bg-blue-600 text-white border-blue-600 shadow-2xs"
+                          : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+                      }`}
+                    >
+                      Specific Year / Section
+                    </button>
+                  </div>
+
+                  {scopeMode === "CUSTOM" && (
+                    <div className="grid grid-cols-2 gap-2 bg-white/80 p-2.5 rounded-xl border border-blue-100">
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-600 uppercase mb-1">
+                          Academic Year *
+                        </label>
+                        <select
+                          value={selectedYearId}
+                          onChange={(e) => handleYearChange(e.target.value)}
+                          className="w-full px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                        >
+                          <option value="">-- Choose Year --</option>
+                          {availableYears.map((yr) => (
+                            <option key={yr.id} value={yr.id}>
+                              {yr.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-600 uppercase mb-1">
+                          Section (Optional)
+                        </label>
+                        <select
+                          value={selectedSectionId}
+                          onChange={(e) => setSelectedSectionId(e.target.value)}
+                          disabled={!selectedYearId}
+                          className="w-full px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 shadow-2xs"
+                        >
+                          <option value="">All Sections in Year</option>
+                          {availableSections.map((sec) => (
+                            <option key={sec.id} value={sec.id}>
+                              Section {sec.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <span className="text-[10px] uppercase tracking-wider text-gray-500 block">Section</span>
-                  <span className="font-bold text-gray-900">{adminProfile?.section_name ? `Section ${adminProfile.section_name}` : (adminProfile?.section_id ? `Sec ${adminProfile.section_id}` : "All Sections")}</span>
-                </div>
-              </div>
+              )}
+
               <p className="text-[11px] text-blue-700 font-medium">
                 {adminProfile?.year_id
-                  ? "This election will be managed by your assigned section. Only your section students will vote."
-                  : "This election will be managed by your department. Department students will be eligible voters."}
+                  ? `This election is restricted to ${adminProfile?.department_code || "CSE"} ${adminProfile?.year_name || "Year"} Section ${adminProfile?.section_name || "A"}. Respective active students are automatically enrolled as voters.`
+                  : scopeMode === "ALL"
+                  ? `This election is open to all students across all years and sections in ${adminProfile?.department_code || adminProfile?.department_name || "your department"}. All active students will be automatically enrolled.`
+                  : "Only active students matching the chosen Year and Section will be enrolled and allowed to vote in this election."}
               </p>
             </div>
 
@@ -1640,8 +1793,8 @@ export default function ElectionManagement() {
                                     }
                                     className="w-full px-3 py-2 bg-slate-50 border border-gray-300 rounded-xl text-xs text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-2xs"
                                   >
-                                    <option value="">-- Choose Student from Roster --</option>
-                                    {departmentStudents.map((st) => (
+                                    <option value="">-- Choose Student from Election Roster --</option>
+                                    {eligibleElectionStudents.map((st) => (
                                       <option key={st.id} value={st.id}>
                                         {st.full_name || st.name} ({st.student_id || st.studentId}) - {st.email}
                                       </option>
@@ -1796,7 +1949,7 @@ export default function ElectionManagement() {
                             className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-2xs"
                           >
                             <option value="">-- Select Specific Student to Add --</option>
-                            {departmentStudents.map((st) => (
+                            {eligibleElectionStudents.map((st) => (
                               <option key={st.id} value={st.id}>
                                 {st.full_name || st.name} ({st.student_id || st.studentId})
                               </option>

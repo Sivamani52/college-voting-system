@@ -57,26 +57,29 @@ export async function createElectionController(req, res) {
     let yearId = null;
     let sectionId = null;
 
+    const parsedYearId = req.body.yearId ? Number(req.body.yearId) : (req.body.year_id ? Number(req.body.year_id) : null);
+    const parsedSectionId = req.body.sectionId ? Number(req.body.sectionId) : (req.body.section_id ? Number(req.body.section_id) : null);
+
     // Enforce ADMIN scoping from database - never trust client input
     if (req.user?.role === "ADMIN") {
       const adminScope = await getAdminScope(createdBy);
       if (!adminScope || !adminScope.department_id) {
         return res.status(403).json({
           success: false,
-          message: "Admin does not have an assigned department. Please contact Super Admin."
+          message: "Admin profile or assigned department not found. Please contact Super Admin."
         });
       }
 
-      departmentId = adminScope.department_id;
+      departmentId = Number(adminScope.department_id);
       // If admin is section-specific, enforce their year & section.
       // If admin is top branch admin, allow year/section to be specified or null.
-      yearId = adminScope.year_id !== null && adminScope.year_id !== undefined ? adminScope.year_id : (req.body.yearId || req.body.year_id || null);
-      sectionId = adminScope.section_id !== null && adminScope.section_id !== undefined ? adminScope.section_id : (req.body.sectionId || req.body.section_id || null);
+      yearId = adminScope.year_id !== null && adminScope.year_id !== undefined ? Number(adminScope.year_id) : (parsedYearId || null);
+      sectionId = adminScope.section_id !== null && adminScope.section_id !== undefined ? Number(adminScope.section_id) : (parsedSectionId || null);
     } else if (req.user?.role === "SUPER_ADMIN") {
       // Super Admin can optionally create election for a specific section or leave null
-      departmentId = req.body.departmentId || req.body.department_id || null;
-      yearId = req.body.yearId || req.body.year_id || null;
-      sectionId = req.body.sectionId || req.body.section_id || null;
+      departmentId = req.body.departmentId ? Number(req.body.departmentId) : (req.body.department_id ? Number(req.body.department_id) : null);
+      yearId = parsedYearId;
+      sectionId = parsedSectionId;
     }
 
     const electionId = await createElection({

@@ -130,9 +130,26 @@ export async function createCandidateController(
       if (!checkAdminStudentScope(adminScope, studentRecord)) {
         return res.status(403).json({
           success: false,
-          message: "Candidates can only be nominated from your assigned section"
+          message: "Candidates can only be nominated from your assigned section or department"
         });
       }
+    }
+
+    // Ensure candidate student strictly matches election scope
+    if (election.department_id && Number(studentRecord.department_id) !== Number(election.department_id)) {
+      return res.status(400).json({
+        message: "Candidate must belong to the department of this election"
+      });
+    }
+    if (election.year_id && Number(studentRecord.year_id) !== Number(election.year_id)) {
+      return res.status(400).json({
+        message: "Candidate must belong to the academic year of this election"
+      });
+    }
+    if (election.section_id && Number(studentRecord.section_id) !== Number(election.section_id)) {
+      return res.status(400).json({
+        message: "Candidate must belong to the section of this election"
+      });
     }
 
     // Check whether student is already candidate for this position in this election

@@ -25,7 +25,7 @@ export async function getAdminScope(userId) {
 }
 
 export const UNAUTHORIZED_ELECTION_MESSAGE =
-  "You are not authorized to access this election. This election does not belong to your assigned section.";
+  "You are not authorized to access this election. This election does not belong to your assigned section or department.";
 
 export const STUDENT_UNAUTHORIZED_ELECTION_MESSAGE =
   "You are not authorized to access this election. This election belongs to another section.";
