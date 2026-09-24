@@ -17,14 +17,25 @@ export const getElectionById = async (id) => {
 };
 
 /**
- * Create new election (Super Admin only)
+ * Create new election (Super Admin or Admin)
  */
-export const createElection = async ({ title, description, startDate, endDate }) => {
+export const createElection = async ({
+  title,
+  description,
+  startDate,
+  endDate,
+  departmentId,
+  yearId,
+  sectionId,
+}) => {
   const response = await api.post("/elections", {
     title,
     description,
     startDate,
     endDate,
+    departmentId,
+    yearId,
+    sectionId,
   });
   return response.data;
 };

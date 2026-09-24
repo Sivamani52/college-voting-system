@@ -56,20 +56,20 @@ router.get(
 );
 
 
-// Update candidate (Super Admin only)
+// Update candidate (Super Admin, Admin)
 router.put(
   "/:id",
   authenticateToken,
-  authorizeRoles("SUPER_ADMIN"),
+  authorizeRoles("SUPER_ADMIN", "ADMIN"),
   updateCandidateController
 );
 
 
-// Delete candidate (Super Admin only)
+// Delete candidate (Super Admin, Admin)
 router.delete(
   "/:id",
   authenticateToken,
-  authorizeRoles("SUPER_ADMIN"),
+  authorizeRoles("SUPER_ADMIN", "ADMIN"),
   deleteCandidateController
 );
 

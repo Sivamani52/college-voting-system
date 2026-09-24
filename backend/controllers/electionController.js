@@ -15,6 +15,8 @@ import {
 } from "../middleware/adminScopeMiddleware.js";
 import { findStudentByUserId } from "../models/studentModel.js";
 import { isEligibleVoter } from "../models/voteModel.js";
+import pool from "../config/db.js";
+import { addBulkEligibleVoters } from "../models/eligibleVoterModel.js";
 
 export async function createElectionController(req, res) {
   try {
@@ -88,9 +90,38 @@ export async function createElectionController(req, res) {
       createdBy
     });
 
+    // Auto-enroll ONLY the respected students belonging to this admin or superadmin scope
+    let autoEnrolledCount = 0;
+    try {
+      let studentQuery = `SELECT id FROM students WHERE status = 'ACTIVE'`;
+      const studentQueryParams = [];
+
+      if (departmentId) {
+        studentQuery += ` AND department_id = ?`;
+        studentQueryParams.push(departmentId);
+      }
+      if (yearId) {
+        studentQuery += ` AND year_id = ?`;
+        studentQueryParams.push(yearId);
+      }
+      if (sectionId) {
+        studentQuery += ` AND section_id = ?`;
+        studentQueryParams.push(sectionId);
+      }
+
+      const [students] = await pool.query(studentQuery, studentQueryParams);
+      if (students.length > 0) {
+        const studentIds = students.map(s => s.id);
+        autoEnrolledCount = await addBulkEligibleVoters(electionId, studentIds);
+      }
+    } catch (voterErr) {
+      console.warn("Auto-enroll voters warning:", voterErr.message);
+    }
+
     return res.status(201).json({
       message: "Election created successfully",
-      electionId
+      electionId,
+      autoEnrolledCount
     });
 
   } catch (error) {

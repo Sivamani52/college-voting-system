@@ -46,20 +46,20 @@ router.get(
 );
 
 
-// Update position (Super Admin only)
+// Update position (Super Admin, Admin)
 router.put(
   "/:id",
   authenticateToken,
-  authorizeRoles("SUPER_ADMIN"),
+  authorizeRoles("SUPER_ADMIN", "ADMIN"),
   updatePositionController
 );
 
 
-// Delete position (Super Admin only)
+// Delete position (Super Admin, Admin)
 router.delete(
   "/:id",
   authenticateToken,
-  authorizeRoles("SUPER_ADMIN"),
+  authorizeRoles("SUPER_ADMIN", "ADMIN"),
   deletePositionController
 );
 

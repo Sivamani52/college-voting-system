@@ -66,11 +66,11 @@ router.get(
 );
 
 
-// Remove all eligible voters for an election (Super Admin only)
+// Remove all eligible voters for an election (Super Admin, Admin)
 router.delete(
   "/election/:electionId",
   authenticateToken,
-  authorizeRoles("SUPER_ADMIN"),
+  authorizeRoles("SUPER_ADMIN", "ADMIN"),
   removeAllEligibleVotersController
 );
 

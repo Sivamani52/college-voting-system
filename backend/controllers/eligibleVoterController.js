@@ -194,8 +194,13 @@ export async function addBulkEligibleVotersController(
       }
 
       departmentId = adminScope.department_id;
-      yearId = adminScope.year_id;
-      sectionId = adminScope.section_id;
+      // If admin has a specific year/section, enforce them; otherwise use election's scope
+      yearId = adminScope.year_id !== null && adminScope.year_id !== undefined ? adminScope.year_id : (election.year_id || yearId || null);
+      sectionId = adminScope.section_id !== null && adminScope.section_id !== undefined ? adminScope.section_id : (election.section_id || sectionId || null);
+    } else if (req.user?.role === "SUPER_ADMIN") {
+      departmentId = departmentId || election.department_id || null;
+      yearId = yearId || election.year_id || null;
+      sectionId = sectionId || election.section_id || null;
     }
 
     let targetStudentIds = [];
@@ -205,9 +210,17 @@ export async function addBulkEligibleVotersController(
       let query = `SELECT id, department_id, year_id, section_id FROM students WHERE (id IN (?) OR student_id IN (?)) AND status = 'ACTIVE'`;
       const queryParams = [studentIds, studentIds];
 
-      if (req.user?.role === "ADMIN") {
-        query += ` AND department_id = ? AND year_id = ? AND section_id = ?`;
-        queryParams.push(departmentId, yearId, sectionId);
+      if (departmentId) {
+        query += ` AND department_id = ?`;
+        queryParams.push(departmentId);
+      }
+      if (yearId) {
+        query += ` AND year_id = ?`;
+        queryParams.push(yearId);
+      }
+      if (sectionId) {
+        query += ` AND section_id = ?`;
+        queryParams.push(sectionId);
       }
 
       const [students] = await pool.query(query, queryParams);
