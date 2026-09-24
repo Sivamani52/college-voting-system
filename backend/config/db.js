@@ -15,6 +15,8 @@ const poolConfig = databaseUrl
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
+      enableKeepAlive: true,
+      keepAliveInitialDelay: 10000,
       ssl: process.env.DB_SSL === "false"
         ? undefined
         : { rejectUnauthorized: false }
@@ -28,6 +30,8 @@ const poolConfig = databaseUrl
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
+      enableKeepAlive: true,
+      keepAliveInitialDelay: 10000,
       ssl: process.env.DB_SSL === "true"
         ? { rejectUnauthorized: false }
         : undefined
