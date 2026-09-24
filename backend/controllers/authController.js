@@ -106,8 +106,11 @@ export async function login(req, res) {
   } catch (error) {
     console.error("Login error:", error);
 
+    const isDbError = ["ENOTFOUND", "ECONNREFUSED", "ETIMEDOUT", "EHOSTUNREACH", "ER_ACCESS_DENIED_ERROR"].includes(error.code);
     res.status(500).json({
-      message: "Server error"
+      message: isDbError
+        ? `Database connection failed (${error.code || error.message}). Please check database service status.`
+        : "Server error"
     });
   }
 }

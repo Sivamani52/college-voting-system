@@ -167,4 +167,13 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+
+  // Test database connection on startup
+  pool.query("SELECT 1")
+    .then(() => {
+      console.log("Database connected successfully.");
+    })
+    .catch((err) => {
+      console.error(`Database connection warning [${err.code || err.message}]: Check DB_HOST and database status in .env`);
+    });
 });
