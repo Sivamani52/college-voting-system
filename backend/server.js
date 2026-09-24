@@ -74,6 +74,7 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// Main API routes with /api prefix
 app.use("/api/auth", authRouter);
 app.use("/api/test", testRoutes);
 app.use("/api/admins", adminRoutes);
@@ -87,6 +88,21 @@ app.use("/api/votes", voteRoutes);
 app.use("/api/results", resultRoutes);
 app.use("/api/departments", departmentRoutes);
 app.use("/api", academicStructureRoutes);
+
+// Fallback aliases without /api prefix for direct client requests
+app.use("/auth", authRouter);
+app.use("/test", testRoutes);
+app.use("/admins", adminRoutes);
+app.use("/students", studentRoutes);
+app.use("/elections", electionRoutes);
+app.use("/admin/elections", electionRoutes);
+app.use("/positions", positionRoutes);
+app.use("/candidates", candidateRoutes);
+app.use("/eligible-voters", eligibleVoterRoutes);
+app.use("/votes", voteRoutes);
+app.use("/results", resultRoutes);
+app.use("/departments", departmentRoutes);
+app.use("/", academicStructureRoutes);
 
 app.get("/api/test-db", async (req, res) => {
   try {
