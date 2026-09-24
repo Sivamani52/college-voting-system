@@ -1,9 +1,11 @@
 import pool from "../config/db.js";
 
 export async function findStudentByStudentId(studentId) {
+  if (!studentId) return null;
+  const cleanId = String(studentId).trim();
   const [rows] = await pool.query(
-    "SELECT * FROM students WHERE student_id = ? LIMIT 1",
-    [studentId]
+    "SELECT * FROM students WHERE LOWER(student_id) = LOWER(?) LIMIT 1",
+    [cleanId]
   );
 
   return rows[0];
